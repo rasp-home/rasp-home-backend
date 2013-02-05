@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# encoding: utf-8
 #
 # rasp-home-backend (Home automation software for Raspberry Pi) 
 # Copyright (C) 2013 Sebastian Wallat, University Duisburg-Essen
