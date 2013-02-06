@@ -21,11 +21,18 @@
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.    
 
 __all__ = ['User']
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Table, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship, backref
 from rasphome.database import Base
 import hashlib
 import string
 import random
+from rasphome.models import Role
+
+users_roles = Table('users_roles', Base.metadata,
+    Column('users_id', Integer, ForeignKey('users.id')),
+    Column('roles_id', Integer, ForeignKey('roles.id'))
+)
 
 class User(Base):
     __tablename__ = 'users'
@@ -33,6 +40,9 @@ class User(Base):
     name = Column(String(50), unique=True)
     password = Column(String(128))
     salt = Column(String(11))
+    roles = relationship("Role",
+                    secondary=users_roles,
+                    backref="users")
     
     def __init__(self, name=None, password=None):
         self.name = name
@@ -48,6 +58,12 @@ class User(Base):
     def check_auth(self, password):
         hash = hashlib.sha512((self.salt+password).encode())
         return hash.hexdigest() == self.password
+    
+    def has_role(self, role_name):
+        for role in self.roles:
+            if role.name == role_name:
+                return True
+        return False
     
     @staticmethod
     def get_password_salted(newPassword, salt):

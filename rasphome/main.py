@@ -22,12 +22,15 @@
 
 import cherrypy
 import rasphome.database
+import rasphome.authorization
 import rasphome.api
 import os
 import os.path
 
 
+
 def start_rasp_home_backend():
+    rasphome.database.set_default_admin_user("admin", "admin")
     db_path = os.path.abspath(os.path.join(os.curdir, 'rasp-home.db'))
     rasphome.database.set_db_path('sqlite:///%s' % (db_path))
     rasphome.database.SAEnginePlugin(cherrypy.engine).subscribe()
@@ -46,11 +49,13 @@ def start_rasp_home_backend():
     server.subscribe()
     global user_dict
     
+    
+    
     config = { 
               '/' : {
                      'tools.auth_basic.on': True,
                      'tools.auth_basic.realm': 'earth',
-                     'tools.auth_basic.checkpassword': rasphome.database.checkpassword_dict(),
+                     'tools.auth_basic.checkpassword': rasphome.authorization.checkpassword(),
                      'tools.db.on' : True
                      }
               }

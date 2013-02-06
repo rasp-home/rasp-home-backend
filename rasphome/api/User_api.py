@@ -25,6 +25,7 @@ __all__=['User_api']
 import cherrypy
 import rasphome.database
 from rasphome.models import User
+from rasphome import authorization
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 class User_api(object):
@@ -49,6 +50,7 @@ class User_api(object):
         return "User %s added." % (user.name)
     
     @cherrypy.expose
+    @cherrypy.tools.protect(roles=["admin"])
     def delete(self, name):
         cherrypy.response.headers['content-type'] = 'text/plain'
         try:

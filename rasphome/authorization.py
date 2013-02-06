@@ -22,3 +22,62 @@
 
 ## BESSER: http://docs.cherrypy.org/stable/progguide/extending/customtools.html
 ## see http://tools.cherrypy.org/wiki/AuthenticationAndAccessRestrictions
+
+__all__=['checkpassword', 'protect']
+import cherrypy
+from cherrypy import tools
+from cherrypy import Tool
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
+
+def checkpassword():
+    def checkpassword(realm, user, password):
+        session = cherrypy.request.db
+        from rasphome.models import User
+        try:
+            results = session.query(User).filter(User.name == user).all()
+            print("Check results %s" % (results))
+        except NoResultFound as e:
+            print("noResults")
+            return False
+        else:
+            print("inFound")
+            found = False
+            for user in results:
+                if user.check_auth(password):
+                    print("password match")
+                    found = True
+                    cherrypy.request.user = user
+                    return True
+            return found
+    
+    return checkpassword
+
+def protect(roles = None, users = None):
+    noError = False
+    user = cherrypy.request.user
+    if roles != None and users == None:
+        for role in roles:
+            if user.has_role(role):
+                noError = True
+                break
+    elif users != None and roles == None:
+        if user.name in users:
+            noError = False
+        else:
+            noError = True
+    elif user != None and roles != None:
+        if not user.name in users:
+            for role in roles:
+                if user.has_role(role):
+                    noError = True
+                    break
+        else:
+            noError = True
+    
+    if noError == False:
+        raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.")
+    
+    
+
+cherrypy.tools.protect = Tool('on_start_resource', protect)

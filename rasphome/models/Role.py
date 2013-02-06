@@ -25,6 +25,7 @@ from sqlalchemy import Column, Integer, String
 from rasphome.database import Base, rasp_db_session
 
 
+
 class Role(Base):
     __tablename__ = 'roles'
     id = Column(Integer, primary_key = True)
