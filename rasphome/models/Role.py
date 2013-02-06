@@ -18,13 +18,20 @@
 # GNU General Public License for more details.
 # 
 # You should have received a copy of the GNU Lesser General Public License
-# along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
+# along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.    
 
-import models
-import api
-from sqlalchemy.ext.declarative import declarative_base
-# Helper to map and register a Python class a db table
-Base = declarative_base()
+__all__ = ['User']
+from sqlalchemy import Column, Integer, String
+from rasphome.database import Base, rasp_db_session
 
 
-from rasphome.main import start_rasp_home_backend
+class Role(Base):
+    __tablename__ = 'roles'
+    id = Column(Integer, primary_key = True)
+    name = Column(String(50), unique=True)
+    
+    def __init__(self, name):
+        self.name = name
+        
+    def __repr__(self):
+        return "<Role %s>" % (self.name)

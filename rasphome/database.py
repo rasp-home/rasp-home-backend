@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 # encoding: utf-8
 #
 # rasp-home-backend (Home automation software for Raspberry Pi) 
@@ -18,8 +18,7 @@
 # GNU General Public License for more details.
 # 
 # You should have received a copy of the GNU Lesser General Public License
-# along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.    
-
+# along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
 import os, os.path
  
 import cherrypy
@@ -30,10 +29,96 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column
 from sqlalchemy.types import String, Integer
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
+__all__ = ['SAEnginePlugin', 'SATool', 'set_db_path', 'Base', 'rasp_db_session', 'checkpassword_dict']
+
+general_db_path = 'sqlite:///:memory:'
+
+def set_db_path(dbPath):
+    global general_db_path
+    general_db_path = dbPath
+
+
+
+def _rasp_create_engine():
+    global general_db_path
+    return create_engine(general_db_path, echo=True, convert_unicode=True)
+
+def _rasp_session(engine = None):
+    
+    if (engine == None):
+        return scoped_session(sessionmaker(autoflush=False, 
+                                                autocommit=False))
+    else:
+        return scoped_session(sessionmaker(autoflush=False,
+                                                autocommit=False,
+                                                bind=engine))
+
+Base = declarative_base()
+
+def rasp_db_session(f):
+    def wrapped_f(*args, **kwargs):
+        engine = _rasp_create_engine();
+        session = _rasp_session(engine);
+        ret = f(session, *args, **kwargs)
+        session.remove()
+        engine.dispose()
+        return ret
+    return wrapped_f
+
+def checkpassword_dict():
+    @rasp_db_session
+    def checkpassword(session, realm, user, password):
+        from rasphome.models import User
+        try:
+            results = session.query(User).filter(User.name == user).all()
+            print("Check results %s" % (results))
+        except NoResultFound as e:
+            print("noResults")
+            return False
+        else:
+            print("inFound")
+            found = False
+            for user in results:
+                if user.check_auth(password):
+                    print("password match")
+                    found = True
+                    return True
+            return found
+        finally:
+            session.remove()
+    
+    return checkpassword
+
+def create_admin_user(engine):
+    print("HALLO")
+    from rasphome.models import User
+    session = _rasp_session(engine)
+    session.configure(bind=engine)
+    #no_result = True
+    #try:
+    #    query = session.query(User).filter(User.name=="admin").all()
+    #    if query.isEmpty:
+    #        no_result = True
+    #    else:
+    #        no_result = False
+    #except NoResultFound as e:
+    #    no_result = True
+        
+    my_user = User(name="admin", password="admin")
+    session.add(my_user)
+    try:
+        session.commit()
+    except:
+        session.rollback()
+    finally:
+        session.remove()
+
 
 # Import all Sqlalchemy Classes here
  
-Besser https://bitbucket.org/Lawouach/cherrypy-recipes/src/50aff88dc4e24206518ec32e1c32af043f2729da/web/database/sql_alchemy?at=default
+#Besser https://bitbucket.org/Lawouach/cherrypy-recipes/src/50aff88dc4e24206518ec32e1c32af043f2729da/web/database/sql_alchemy?at=default
 # From: http://www.defuze.org/archives/222-integrating-sqlalchemy-into-a-cherrypy-application.html
  
 class SAEnginePlugin(plugins.SimplePlugin):
@@ -54,9 +139,12 @@ class SAEnginePlugin(plugins.SimplePlugin):
         self.bus.subscribe("bind", self.bind)
  
     def start(self):
-        db_path = os.path.abspath(os.path.join(os.curdir, 'my.db'))
-        self.sa_engine = create_engine('sqlite:///%s' % db_path, echo=True)
+        global general_db_path
+        self.sa_engine = create_engine(general_db_path, echo=True, convert_unicode=True)
+        import rasphome.models
         Base.metadata.create_all(self.sa_engine)
+        create_admin_user(self.sa_engine)
+        
  
     def stop(self):
         if self.sa_engine:
@@ -84,8 +172,7 @@ class SATool(cherrypy.Tool):
                                self.bind_session,
                                priority=20)
  
-        self.session = scoped_session(sessionmaker(autoflush=True,
-                                                  autocommit=False))
+        self.session = _rasp_session()
  
     def _setup(self):
         cherrypy.Tool._setup(self)
@@ -107,28 +194,6 @@ class SATool(cherrypy.Tool):
         finally:
             self.session.remove()
  
- 
- 
- 
-class Root(object):
-    @cherrypy.expose
-    def index(self):
-        # print all the recorded messages so far
-        msgs = [str(msg) for msg in Message.list(cherrypy.request.db)]
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        return "Here are your list of messages: %s" % '\n'.join(msgs)
- 
-    @cherrypy.expose
-    def record(self, msg):
-        # go to /record?msg=hello world to record a "hello world" message
-        m = Message(msg)
-        cherrypy.request.db.add(m)
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        return "Recorded: %s" % m
- 
-if __name__ == '__main__':
-    SAEnginePlugin(cherrypy.engine).subscribe()
-    cherrypy.tools.db = SATool()
-    cherrypy.tree.mount(Root(), '/', {'/': {'tools.db.on': True}})
-    cherrypy.engine.start()
-    cherrypy.engine.block()
+
+
+

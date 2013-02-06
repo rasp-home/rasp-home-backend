@@ -20,11 +20,5 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-import models
-import api
-from sqlalchemy.ext.declarative import declarative_base
-# Helper to map and register a Python class a db table
-Base = declarative_base()
-
-
-from rasphome.main import start_rasp_home_backend
+## BESSER: http://docs.cherrypy.org/stable/progguide/extending/customtools.html
+## see http://tools.cherrypy.org/wiki/AuthenticationAndAccessRestrictions
