@@ -50,7 +50,7 @@ class User(Base):
         self.password = User.get_password_salted(password, self.salt)
         
     def __repr__(self):
-        return "<User %s, Password %s, Salt %s>" % (self.name, self.password, self.salt)
+        return "<User %s>" % (self.name)
     
     def set_new_password(self, password):
         self.password = User.get_password_salted(password, self.salt)

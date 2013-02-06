@@ -53,8 +53,9 @@ def checkpassword():
     
     return checkpassword
 
-def protect(roles = None, users = None):
+def require(roles = None, users = None):
     noError = False
+    print("Login: %s" % (cherrypy.request.login))
     user = cherrypy.request.user
     if roles != None and users == None:
         for role in roles:
@@ -76,8 +77,6 @@ def protect(roles = None, users = None):
             noError = True
     
     if noError == False:
-        raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.")
-    
-    
+        raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.") 
 
-cherrypy.tools.protect = Tool('on_start_resource', protect)
+cherrypy.tools.protect = Tool('before_handler', require)

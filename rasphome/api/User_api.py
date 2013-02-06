@@ -52,25 +52,31 @@ class User_api(object):
     @cherrypy.expose
     @cherrypy.tools.protect(roles=["admin"])
     def delete(self, name):
+        session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         try:
-            result = cherrypy.request.db.query(User).filter(User.name==name).one()
+            user = cherrypy.request.db.query(User).filter(User.name==name).one()
         except MultipleResultsFound as e:
             return "Multiple users with name %s found!" % (name)
         except NoResultFound as e:
             return "There is no user with name %s!" % (name)
-        cherrypy.request.db.delete(result)
+        if user.has_role(rasphome.database.admin_role):
+            role = session.query(rasphome.models.Role).filter(rasphome.models.Role.name==rasphome.database.admin_role).all()
+            if len(role) <= 1:
+                raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.")
+            
+        cherrypy.request.db.delete(user)
         return "User deleted"
     
     @cherrypy.expose
     def password(self, name, password):
         cherrypy.response.headers['content-type'] = 'text/plain'
         try:
-            result = cherrypy.request.db.query(User).filter(User.name==name).one()
+            user = cherrypy.request.db.query(User).filter(User.name==name).one()
         except MultipleResultsFound as e:
             return "Multiple users with name %s found!" % (name)
         except NoResultFound as e:
             return "There is no user with name %s!" % (name)
         else:
-            result.password = password
+            user.set_new_password(password)
             return "Password changed"

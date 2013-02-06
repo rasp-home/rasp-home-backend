@@ -36,3 +36,9 @@ class Role(Base):
         
     def __repr__(self):
         return "<Role %s>" % (self.name)
+
+    def has_user(self, username):
+        for user in self.users:
+            if username == user.name:
+                return True    
+        return False
