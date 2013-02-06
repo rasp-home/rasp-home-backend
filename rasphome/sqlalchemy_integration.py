@@ -33,8 +33,7 @@ from sqlalchemy.types import String, Integer
 
 # Import all Sqlalchemy Classes here
  
-
-
+Besser https://bitbucket.org/Lawouach/cherrypy-recipes/src/50aff88dc4e24206518ec32e1c32af043f2729da/web/database/sql_alchemy?at=default
 # From: http://www.defuze.org/archives/222-integrating-sqlalchemy-into-a-cherrypy-application.html
  
 class SAEnginePlugin(plugins.SimplePlugin):
