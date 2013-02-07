@@ -75,8 +75,8 @@ def require(roles = None, users = None):
                     break
         else:
             noError = True
-    
+
     if noError == False:
         raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.") 
 
-cherrypy.tools.protect = Tool('before_handler', require)
+cherrypy.tools.require = Tool('before_handler', require)

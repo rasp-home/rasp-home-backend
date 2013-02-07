@@ -23,6 +23,7 @@
 import rasphome.models
 import rasphome.api
 import rasphome.authorization
+import rasphome.database
 
 
 from rasphome.main import start_rasp_home_backend

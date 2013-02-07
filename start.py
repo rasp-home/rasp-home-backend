@@ -53,7 +53,7 @@ import os
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
-import rasphome as rh
+import rasphome
 
 __all__ = []
 __version__ = 0.1
@@ -121,7 +121,7 @@ USAGE
 
         verbose = args.verbose
         
-        return rh.start_rasp_home_backend()
+        return rasphome.start_rasp_home_backend()
     except KeyboardInterrupt:
         ### handle keyboard interrupt ###
         return 0

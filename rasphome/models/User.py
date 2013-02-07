@@ -74,6 +74,6 @@ class User(Base):
     def generate_salt():
         saltchars = string.ascii_letters + string.digits + './'
         salt = "$1$"
-        salt += ''.join([ random.choice(saltchars) for x in range(8) ])
+        salt += ''.join([ random.choice(saltchars) for x in range(10) ])
         return salt
         

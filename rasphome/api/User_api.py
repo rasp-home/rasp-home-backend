@@ -24,59 +24,90 @@ __all__=['User_api']
 
 import cherrypy
 import rasphome.database
+import xml.etree.ElementTree
 from rasphome.models import User
 from rasphome import authorization
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 class User_api(object):
     
-    @cherrypy.expose
-    def index(self):
-        msg = "List of Users: \n"
-        
-        db = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        result = db.query(User).all()
-        for user in result:
-            msg = msg + str(user) + "\n"
-        return msg
+    exposed = True
     
-    @cherrypy.expose
-    def add(self, name, password):
-        user = User(name, password)
-        cherrypy.request.db.add(user)
+    """
+    "curl http://admin:admin@localhost:8090/user/
+    "curl http://admin:admin@localhost:8090/user?user=sw
+    """
+    def GET(self, user = None):
+        session = cherrypy.request.db
+        cherrypy.response.headers['content-type'] = 'text/plain'
+        if user == None:
+            msg = "List of Users: \n"
+             
+            result = session.query(User).all()
+            for user in result:
+                msg = msg + str(user) + "\n"
+            return msg
+        else:
+            msg = "User: \n"
+            my_user = session.query(User).filter(User.name==user).all()
+            if len(my_user) == 0:
+                raise cherrypy.HTTPError("404 No User")
+            msg = msg + str(my_user[0]) + "\n"
+            return msg
+    
+    """
+    "curl -X PUT -H "Content-Type: text/xml" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/user
+    """
+    @cherrypy.tools.auth_basic(on=False)
+    def PUT(self):
+        
+        if (cherrypy.request.process_request_body == True):
+            txt = cherrypy.request.body.read().decode()
+        else:
+            raise cherrypy.HTTPError("404 No body")
+        tree = xml.etree.ElementTree.fromstring(txt)
+        name = tree.find("name").text
+        password = tree.find("password").text
+            
+        my_user = User(name, password)
+        cherrypy.request.db.add(my_user)
         cherrypy.request.db.commit()
         cherrypy.response.headers['content-type'] = 'text/plain'
-        return "User %s added." % (user.name)
+        return "User %s added." % (my_user.name)
     
-    @cherrypy.expose
-    @cherrypy.tools.protect(roles=["admin"])
-    def delete(self, name):
+    """
+    "curl -X DELETE http://admin:admin@localhost:8090/user/andi
+    """
+    @cherrypy.tools.require(roles=["admin"])
+    def DELETE(self, user):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         try:
-            user = cherrypy.request.db.query(User).filter(User.name==name).one()
+            my_user = session.query(User).filter(User.name==user).one()
         except MultipleResultsFound as e:
-            return "Multiple users with name %s found!" % (name)
+            return "Multiple users with user %s found!" % (user)
         except NoResultFound as e:
-            return "There is no user with name %s!" % (name)
-        if user.has_role(rasphome.database.admin_role):
-            role = session.query(rasphome.models.Role).filter(rasphome.models.Role.name==rasphome.database.admin_role).all()
-            if len(role) <= 1:
-                raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.")
-            
-        cherrypy.request.db.delete(user)
+            return "There is no my_user with user %s!" % (user)
+        session.delete(my_user)
         return "User deleted"
     
-    @cherrypy.expose
-    def password(self, name, password):
+    """
+    " curl -X POST -H "Content-Type: text/plain" -d "test" http://admin:admin@localhost:8090/user/andi/password
+    """
+    def POST(self, user, attrib):
         cherrypy.response.headers['content-type'] = 'text/plain'
+        msg = "User: %s Attrib: %s" % (user, attrib)
         try:
-            user = cherrypy.request.db.query(User).filter(User.name==name).one()
+            my_user = cherrypy.request.db.query(User).filter(User.name==user).one()
         except MultipleResultsFound as e:
-            return "Multiple users with name %s found!" % (name)
+            return msg + "Multiple users with user %s found!" % (user)
         except NoResultFound as e:
-            return "There is no user with name %s!" % (name)
+            return msg + "There is no my_user with user %s!" % (user)
         else:
-            user.set_new_password(password)
-            return "Password changed"
+            # cherrypy.request.process_request_body == True
+            if (cherrypy.request.process_request_body == True):
+                my_user.set_new_password(cherrypy.request.body.read().decode())
+            else:
+                raise cherrypy.HTTPError("404 No body")
+            return msg + "Password changed"
+        

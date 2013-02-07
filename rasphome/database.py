@@ -34,19 +34,6 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 __all__ = ['SAEnginePlugin', 'SATool', 'set_db_path', 'Base', 'rasp_db_session', 'set_default_admin_user', 'set_admin_role']
 
 general_db_path = 'sqlite:///:memory:'
-admin_user = "admin"
-admin_pass = "admin"
-admin_role = "admin"
-
-def set_default_admin_user(username, password):
-    global admin_user
-    global admin_pass
-    admin_user = username
-    admin_pass = password
-    
-def set_admin_role(role):
-    global admin_role
-    admin_role = role
 
 def set_db_path(dbPath):
     global general_db_path
@@ -73,55 +60,13 @@ Base = declarative_base()
 def rasp_db_session(f):
     def wrapped_f(*args, **kwargs):
         engine = _rasp_create_engine();
+        Base.metadata.create_all(engine)
         session = _rasp_session(engine);
         ret = f(session, *args, **kwargs)
         session.remove()
         engine.dispose()
         return ret
     return wrapped_f
-
-def create_admin_role(engine):
-    global admin_role
-    from rasphome.models import Role
-    
-    session = _rasp_session(engine)
-    session.configure(bind=engine)
-    
-    my_role = Role(name=admin_role)
-    session.add(my_role)
-    try:
-        session.commit()
-    except:
-        session.rollback()
-    finally:
-        session.remove()
-
-def create_admin_user(engine):
-    global admin_user
-    global admin_pass
-    global admin_role
-    from rasphome.models import User
-    from rasphome.models import Role
-
-    
-    session = _rasp_session(engine)
-    session.configure(bind=engine)
-        
-    my_user = User(name=admin_user, password=admin_pass)
-    session.add(my_user)
-    try:
-        my_role = session.query(Role).filter(Role.name==admin_role).one()
-        my_user.roles.append(my_role)
-    except MultipleResultsFound:
-        pass
-    except NoResultFound:
-        pass
-    try:
-        session.commit()
-    except:
-        session.rollback()
-    finally:
-        session.remove()
 
 
 
@@ -152,9 +97,6 @@ class SAEnginePlugin(plugins.SimplePlugin):
         self.sa_engine = create_engine(general_db_path, echo=True, convert_unicode=True)
         import rasphome.models
         Base.metadata.create_all(self.sa_engine)
-        create_admin_role(self.sa_engine)
-        create_admin_user(self.sa_engine)
-        
  
     def stop(self):
         if self.sa_engine:
