@@ -20,7 +20,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__=['User_api']
+__all__=['Monitor_api']
 
 import cherrypy
 import xml.etree.ElementTree
@@ -28,7 +28,7 @@ from rasphome.models import User
 from rasphome import authorization
 from sqlalchemy.orm.exc import NoResultFound
 
-class User_api(object):
+class Monitor_api(object):
     exposed = True
     
     """

@@ -29,13 +29,12 @@ from cherrypy import tools
 from cherrypy import Tool
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
-
 def checkpassword():
     def checkpassword(realm, user, password):
         session = cherrypy.request.db
-        from rasphome.models import User
+        from rasphome.models import Role
         try:
-            results = session.query(User).filter(User.name == user).all()
+            results = session.query(Role).filter(Role.name == user).all()
             print("Check results %s" % (results))
         except NoResultFound as e:
             print("noResults")
@@ -43,38 +42,27 @@ def checkpassword():
         else:
             print("inFound")
             found = False
-            for user in results:
-                if user.check_auth(password):
-                    print("password match")
+            for role in results:
+                if role.check_auth(password):
+                    print("Password match")
                     found = True
-                    cherrypy.request.user = user
+                    cherrypy.request.role = role
                     return True
             return found
     
     return checkpassword
 
-def require(roles = None, users = None):
+def require(roles = None, user_isAdmin = None):
     noError = False
     print("Login: %s" % (cherrypy.request.login))
-    user = cherrypy.request.user
-    if roles != None and users == None:
-        for role in roles:
-            if user.has_role(role):
-                noError = True
-                break
-    elif users != None and roles == None:
-        if user.name in users:
-            noError = False
-        else:
-            noError = True
-    elif user != None and roles != None:
-        if not user.name in users:
-            for role in roles:
-                if user.has_role(role):
+    role = cherrypy.request.role
+    if roles != None:
+        if role.__class__.__name__ in roles:
+            if role.__class__.__name__ == "User" and user_isAdmin == True:
+                if role.isAdmin == True:
                     noError = True
-                    break
-        else:
-            noError = True
+            else :
+                noError = True
 
     if noError == False:
         raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.") 

@@ -24,46 +24,31 @@ import cherrypy
 import rasphome.database
 import rasphome.authorization
 import rasphome.api
-import os
 import os.path
-from sqlalchemy.orm.exc import NoResultFound
-
-def create_role(session, role):
-    from rasphome.models import Role
-    
-    my_role = Role(name=role)
-    session.add(my_role)
-    try:
-        session.commit()
-    except:
-        session.rollback()
         
-def create_user(session, username, password, role):
-    from rasphome.models import Role
+def create_user(session, username, password):
     from rasphome.models import User
-    
     my_user = User(username, password)
+    my_user.isAdmin = True
     session.add(my_user)
-    
     try:
-        my_role = session.query(Role).filter(Role.name==role).all()[0]
-        my_user.roles.append(my_role)
-    except NoResultFound:
-        pass
-    
+        session.commit()
+    except:
+        session.rollback()      
+          
+def create_node(session, username, password):
+    from rasphome.models import Node
+    my_node = Node(username, password)
+    session.add(my_node)
     try:
         session.commit()
     except:
         session.rollback()
-
-
 
 @rasphome.database.rasp_db_session
 def create_init_db(session):
-    create_role(session, role="admin")
-    create_user(session, username="admin", password="admin", role="admin")
-
-
+    create_user(session, username="admin", password="admin")
+    create_node(session, username="test", password="test")
 
 def start_rasp_home_backend():
     ## Set up path to db file
@@ -77,7 +62,6 @@ def start_rasp_home_backend():
     rasphome.database.SAEnginePlugin(cherrypy.engine).subscribe()
     cherrypy.tools.db = rasphome.database.SATool()
     
-    
     ## Set standard port
     cherrypy.config.update({'server.socket_port': 8090})
     
@@ -88,7 +72,6 @@ def start_rasp_home_backend():
     server.ssl_certificate = './cert.pem'
     server.ssl_private_key = './privatekey.pem'
     server.subscribe()
-    
     
     ## Do other config
     config = { 
@@ -103,6 +86,10 @@ def start_rasp_home_backend():
     
     ## Set up Api
     root = rasphome.api.Root()
+    root.backend = rasphome.api.Backend_api()
+    root.monitor = rasphome.api.Monitor_api()
+    root.node = rasphome.api.Node_api()
+    root.room = rasphome.api.Room_api()
     root.user = rasphome.api.User_api()
     
     #application = cherrypy.tree.mount(root, '/', config)
@@ -110,6 +97,3 @@ def start_rasp_home_backend():
     #cherrypy.engine.start()
     
     cherrypy.quickstart(root, '/', config)
-   
-    
-    

@@ -31,7 +31,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import String, Integer
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
-__all__ = ['SAEnginePlugin', 'SATool', 'set_db_path', 'Base', 'rasp_db_session', 'set_default_admin_user', 'set_admin_role']
+__all__ = ['SAEnginePlugin', 'SATool', 'set_db_path', 'Base', 'rasp_db_session']
 
 general_db_path = 'sqlite:///:memory:'
 

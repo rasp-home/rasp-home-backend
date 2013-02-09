@@ -18,11 +18,23 @@
 # GNU General Public License for more details.
 # 
 # You should have received a copy of the GNU Lesser General Public License
-# along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
+# along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.    
 
-from rasphome.api.Root import Root
-from rasphome.api.Backend_api import Backend_api
-from rasphome.api.Monitor_api import Monitor_api
-from rasphome.api.Node_api import Node_api
-from rasphome.api.Room_api import Room_api
-from rasphome.api.User_api import User_api
+__all__ = ['Room']
+
+from sqlalchemy import  Column, Integer, String
+from rasphome.database import Base
+from sqlalchemy.orm import relationship
+
+class Room(Base):
+    __tablename__ = 'room'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), unique=True)
+    user = relationship("User", backref="room")
+    node = relationship("Node", backref="room")
+    
+    def __init__(self, name):
+        self.name = name;
+    
+    def __repr__(self):
+        return "<Room %s>" % (self.name)

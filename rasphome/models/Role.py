@@ -20,25 +20,35 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.    
 
-__all__ = ['User']
-from sqlalchemy import Column, Integer, String
-from rasphome.database import Base, rasp_db_session
+__all__ = ['Role']
 
-
+from sqlalchemy import Column, Integer, String, Boolean
+from rasphome.database import Base
+import hashlib
 
 class Role(Base):
-    __tablename__ = 'roles'
+    __tablename__ = 'role'
     id = Column(Integer, primary_key = True)
+    type = Column(String(50))
     name = Column(String(50), unique=True)
+    password = Column(String(128))
+    login = Column(Boolean, default=False)
+    backend_pass = Column(String(50))
     
-    def __init__(self, name):
+    __mapper_args__ = {
+        'polymorphic_identity':'role',
+        'polymorphic_on':type
+    }
+    
+    def __init__(self, name, password):
         self.name = name
+        self.password = self.get_hash_password(password)
         
     def __repr__(self):
         return "<Role %s>" % (self.name)
-
-    def has_user(self, username):
-        for user in self.users:
-            if username == user.name:
-                return True    
-        return False
+    
+    def get_hash_password(self, password):
+        return hashlib.sha512(password.encode()).hexdigest()
+    
+    def check_auth(self, password):
+        return self.get_hash_password(password) == self.password

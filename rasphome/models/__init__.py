@@ -19,7 +19,9 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
-from rasphome.models.User import User
+from rasphome.models.Backend import Backend
+from rasphome.models.Monitor import Monitor
+from rasphome.models.Node import Node
 from rasphome.models.Role import Role
-
-
+from rasphome.models.Room import Room
+from rasphome.models.User import User
