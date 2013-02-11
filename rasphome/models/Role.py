@@ -24,7 +24,7 @@ __all__ = ['Role']
 
 from sqlalchemy import Column, Integer, String, Boolean
 from rasphome.database import Base
-import hashlib
+from passlib.hash import sha256_crypt
 
 class Role(Base):
     __tablename__ = 'role'
@@ -48,7 +48,7 @@ class Role(Base):
         return "<Role %s>" % (self.name)
     
     def get_hash_password(self, password):
-        return hashlib.sha512(password.encode()).hexdigest()
+        return sha256_crypt.encrypt(password)
     
     def check_auth(self, password):
-        return self.get_hash_password(password) == self.password
+        return sha256_crypt.verify(password, self.password)
