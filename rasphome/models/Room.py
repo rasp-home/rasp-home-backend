@@ -25,6 +25,7 @@ __all__ = ['Room']
 from sqlalchemy import  Column, Integer, String
 from rasphome.database import Base
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.exc import NoResultFound
 
 class Room(Base):
     __tablename__ = 'room'
@@ -38,3 +39,40 @@ class Room(Base):
     
     def __repr__(self):
         return "<Room %s>" % (self.name)
+    
+    @staticmethod
+    def get_all(session):
+        return session.query(Room).all()
+    
+    @staticmethod
+    def get_one(session, name):
+        try:
+            return session.query(Room).filter(Room.name == name).one()
+        except NoResultFound:
+            return -1
+    
+    @staticmethod
+    def add_one(session, name):
+        session.add(Room(name))
+        session.commit()
+    
+    @staticmethod
+    def del_one(session, name):
+        try:
+            my_room = session.query(Room).filter(Room.name == name).one()
+            session.delete(my_room)
+            return 0
+        except NoResultFound:
+            return -1
+        
+    @staticmethod
+    def edit_one(session, name, attrib, value):
+        my_room = Room.get_one(session, name)
+        if isinstance(my_room, Room):
+            if attrib == "name":
+                my_room.name = value
+                return my_room
+            else:
+                return -1
+        else:
+            return -2

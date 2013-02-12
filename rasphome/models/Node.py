@@ -24,6 +24,8 @@ __all__ = ['Node']
 
 from sqlalchemy import  Column, Integer, String, ForeignKey
 from rasphome.models.Role import Role
+from rasphome.models.Room import Room
+from sqlalchemy.orm.exc import NoResultFound
 
 class Node(Role):
     __tablename__ = 'node'
@@ -42,3 +44,53 @@ class Node(Role):
     
     def __repr__(self):
         return "<Node %s>" % (self.name)
+
+    @staticmethod
+    def get_all(session):
+        return session.query(Node).all()
+    
+    @staticmethod
+    def get_one(session, name):
+        try:
+            return session.query(Node).filter(Node.name == name).one()
+        except NoResultFound:
+            return -1
+    
+    @staticmethod
+    def add_one(session, name, password):
+        session.add(Node(name, password))
+        session.commit()
+    
+    @staticmethod
+    def del_one(session, name):
+        try:
+            my_node = session.query(Node).filter(Node.name == name).one()
+            session.delete(my_node)
+            return 0
+        except NoResultFound:
+            return -1
+        
+    @staticmethod
+    def edit_one(session, name, attrib, value):
+        my_node = Node.get_one(session, name)
+        if isinstance(my_node, Node):
+            if attrib == "room_id":
+                my_room = Room.get_one(session, value)
+                if isinstance(my_room, Room):
+                    my_node.room_id = my_room
+                    return my_node
+                else:
+                    return -3
+            elif attrib == "title":
+                my_node.title = value
+                return my_node
+            elif attrib == "type":
+                my_node.type = value
+                return my_node
+            elif attrib == "value":
+                my_node.value = value
+                return my_node
+            else:
+                return Role.edit_one(session, my_node, attrib, value)
+        else:
+            return -2

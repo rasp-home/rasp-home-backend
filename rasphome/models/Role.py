@@ -47,8 +47,20 @@ class Role(Base):
     def __repr__(self):
         return "<Role %s>" % (self.name)
     
-    def get_hash_password(self, password):
-        return hashlib.sha512(password.encode()).hexdigest()
-    
     def check_auth(self, password):
         return self.get_hash_password(password) == self.password
+    
+    @staticmethod
+    def get_hash_password(password):
+        return hashlib.sha512(password.encode()).hexdigest()
+    
+    @staticmethod
+    def edit_one(session, my_role, attrib, value):
+        if attrib == "name":
+            my_role.name = value
+            return my_role
+        if attrib == "password":
+            my_role.password = Role.get_hash_password(value)
+            return my_role
+        else:
+            return -1

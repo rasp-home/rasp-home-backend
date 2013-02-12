@@ -24,6 +24,7 @@ __all__ = ['Backend']
 
 from sqlalchemy import  Column, Integer, ForeignKey
 from rasphome.models.Role import Role
+from sqlalchemy.orm.exc import NoResultFound
 
 class Backend(Role):
     __tablename__ = 'backend'
@@ -38,3 +39,36 @@ class Backend(Role):
     
     def __repr__(self):
         return "<Backend %s>" % (self.name)
+
+    @staticmethod
+    def get_all(session):
+        return session.query(Backend).all()
+    
+    @staticmethod
+    def get_one(session, name):
+        try:
+            return session.query(Backend).filter(Backend.name == name).one()
+        except NoResultFound:
+            return -1
+    
+    @staticmethod
+    def add_one(session, name, password):
+        session.add(Backend(name, password))
+        session.commit()
+    
+    @staticmethod
+    def del_one(session, name):
+        try:
+            my_backend = session.query(Backend).filter(Backend.name == name).one()
+            session.delete(my_backend)
+            return 0
+        except NoResultFound:
+            return -1
+        
+    @staticmethod
+    def edit_one(session, name, attrib, value):
+        my_backend = Backend.get_one(session, name)
+        if isinstance(my_backend, Backend):
+            Role.edit_one(session, my_backend, attrib, value)
+        else:
+            return -2

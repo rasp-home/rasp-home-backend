@@ -24,6 +24,7 @@ __all__ = ['Monitor']
 
 from sqlalchemy import  Column, Integer, ForeignKey
 from rasphome.models.Role import Role
+from sqlalchemy.orm.exc import NoResultFound
 
 class Monitor(Role):
     __tablename__ = 'monitor'
@@ -38,3 +39,36 @@ class Monitor(Role):
     
     def __repr__(self):
         return "<Monitor %s>" % (self.name)
+
+    @staticmethod
+    def get_all(session):
+        return session.query(Monitor).all()
+    
+    @staticmethod
+    def get_one(session, name):
+        try:
+            return session.query(Monitor).filter(Monitor.name == name).one()
+        except NoResultFound:
+            return -1
+    
+    @staticmethod
+    def add_one(session, name, password):
+        session.add(Monitor(name, password))
+        session.commit()
+    
+    @staticmethod
+    def del_one(session, name):
+        try:
+            my_monitor = session.query(Monitor).filter(Monitor.name == name).one()
+            session.delete(my_monitor)
+            return 0
+        except NoResultFound:
+            return -1
+        
+    @staticmethod
+    def edit_one(session, name, attrib, value):
+        my_monitor = Monitor.get_one(session, name)
+        if isinstance(my_monitor, Monitor):
+            Role.edit_one(session, my_monitor, attrib, value)
+        else:
+            return -2
