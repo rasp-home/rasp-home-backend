@@ -41,4 +41,4 @@ class Node(Role):
         super().__init__(name, password)
     
     def __repr__(self):
-        return "<Node %s>" % (self.name)
+        return "<Node %s>" % self.name

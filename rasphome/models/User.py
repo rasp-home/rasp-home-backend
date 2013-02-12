@@ -39,4 +39,4 @@ class User(Role):
         super().__init__(name, password)
     
     def __repr__(self):
-        return "<User %s>" % (self.name)
+        return "<User %s>" % self.name

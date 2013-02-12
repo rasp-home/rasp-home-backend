@@ -32,6 +32,6 @@ class Root(object):
     def index(self):
         cherrypy.response.headers['content-type'] = 'text/plain'
         msg = "Hello World! "
-        if cherrypy.request.login != False:
-            msg = msg + "Login: %s" % (cherrypy.request.login)
+        if cherrypy.request.login:
+            msg += "Login: %s" % cherrypy.request.login
         return msg

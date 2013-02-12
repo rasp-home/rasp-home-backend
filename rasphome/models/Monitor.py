@@ -37,4 +37,4 @@ class Monitor(Role):
         super().__init__(name, password)
     
     def __repr__(self):
-        return "<Monitor %s>" % (self.name)
+        return "<Monitor %s>" % self.name

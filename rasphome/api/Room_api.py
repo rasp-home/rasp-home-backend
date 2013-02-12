@@ -38,7 +38,7 @@ class Room_api(object):
     def GET(self, user = None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
-        if user == None:
+        if user is None:
             msg = "List of Users: \n"
             result = session.query(User).all()
             for user in result:
@@ -56,7 +56,7 @@ class Room_api(object):
     """
     @cherrypy.tools.auth_basic(on=False)
     def PUT(self):
-        if (cherrypy.request.process_request_body == True):
+        if cherrypy.request.process_request_body:
             txt = cherrypy.request.body.read()
         else:
             raise cherrypy.HTTPError("404 No body")
@@ -68,7 +68,7 @@ class Room_api(object):
         cherrypy.request.db.add(my_user)
         cherrypy.request.db.commit()
         cherrypy.response.headers['content-type'] = 'text/plain'
-        return "User %s added." % (my_user.name)
+        return "User %s added." % my_user.name
     
     """
     "curl -X DELETE http://admin:admin@localhost:8090/user/andi
@@ -94,13 +94,12 @@ class Room_api(object):
             my_user = cherrypy.request.db.query(User).filter(User.name==user).one()
         except NoResultFound:
             raise cherrypy.HTTPError("404 User %s not found" % user)
-        if (cherrypy.request.process_request_body == True):
+        if cherrypy.request.process_request_body:
             if attrib == "password":
                 my_user.password(cherrypy.request.body.read())
-                return "Password changed"
+                return msg + "Password changed"
             else:
                 raise cherrypy.HTTPError("404 Attribute %s not found" % attrib)
         else:
             raise cherrypy.HTTPError("404 No body")
-        return msg + "Password changed"
         

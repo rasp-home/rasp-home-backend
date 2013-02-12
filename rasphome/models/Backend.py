@@ -37,4 +37,4 @@ class Backend(Role):
         super().__init__(name, password)
     
     def __repr__(self):
-        return "<Backend %s>" % (self.name)
+        return "<Backend %s>" % self.name

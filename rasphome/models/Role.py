@@ -45,7 +45,7 @@ class Role(Base):
         self.password = self.get_hash_password(password)
         
     def __repr__(self):
-        return "<Role %s>" % (self.name)
+        return "<Role %s>" % self.name
     
     def get_hash_password(self, password):
         return sha512_crypt.encrypt(password)
