@@ -24,9 +24,8 @@ __all__=['Node_api']
 
 import cherrypy
 import xml.etree.ElementTree
-from rasphome.models import User
 from rasphome import authorization
-from sqlalchemy.orm.exc import NoResultFound
+from rasphome.models.Node import Node
 
 class Node_api(object):
     exposed = True
@@ -35,72 +34,66 @@ class Node_api(object):
     "curl http://admin:admin@localhost:8090/user/
     "curl http://admin:admin@localhost:8090/user?user=sw
     """
-    def GET(self, user = None):
+    def GET(self, name = None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
-        if user == None:
-            msg = "List of Users: \n"
-            result = session.query(User).all()
-            for user in result:
-                msg = msg + str(user) + "\n"
+        if name == None:
+            msg = "All Nodes: \n"
+            result = Node.get_all(session)
+            for name in result:
+                msg = msg + str(name) + "\n"
             return msg
         else:
-            try:
-                my_user = session.query(User).filter(User.name==user).one()
-            except NoResultFound:
-                raise cherrypy.HTTPError("404 User %s not found" % user)
-            return "User: \n" + str(my_user[0]) + "\n"
+            my_node = Node.get_one(session, name)
+            if isinstance(my_node, Node):
+                return "Node: \n" + str(my_node) + "\n"
+            else:
+                raise cherrypy.HTTPError("404 Node %s not found" % name)
+            
     
     """
     "curl -X PUT -H "Content-Type: text/xml" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/user
     """
     @cherrypy.tools.auth_basic(on=False)
     def PUT(self):
+        session = cherrypy.request.db
+        cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
-            txt = cherrypy.request.body.read()
+            tree = xml.etree.ElementTree.fromstring(cherrypy.request.body.read())
+            name = tree.find("name").text
+            password = tree.find("password").text
+            
+            Node.add_one(session, name, password)
+            return "Node %s added." % (name)
         else:
             raise cherrypy.HTTPError("404 No body")
-        tree = xml.etree.ElementTree.fromstring(txt)
-        name = tree.find("name").text
-        password = tree.find("password").text
-            
-        my_user = User(name, password)
-        cherrypy.request.db.add(my_user)
-        cherrypy.request.db.commit()
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        return "User %s added." % (my_user.name)
     
     """
     "curl -X DELETE http://admin:admin@localhost:8090/user/andi
     """
-    @cherrypy.tools.require(roles=["User"], user_isAdmin=True)
-    def DELETE(self, user):
+    @cherrypy.tools.require(roles=["Node"], user_isAdmin=True)
+    def DELETE(self, name):
         session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        try:
-            my_user = session.query(User).filter(User.name==user).one()
-        except NoResultFound:
-            raise cherrypy.HTTPError("404 User %s not found" % user)
-        session.delete(my_user)
-        return "User deleted"
+        my_node = Node.del_one(session, name)
+        if my_node == 0:
+            cherrypy.response.headers['content-type'] = 'text/plain'
+            return "Node deleted"
+        else:
+            raise cherrypy.HTTPError("404 Node %s not found" % name)
     
     """
     " curl -X POST -H "Content-Type: text/plain" -d "test" http://admin:admin@localhost:8090/user/andi/password
     """
-    def POST(self, user, attrib):
+    def POST(self, name, attrib):
+        session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
-        msg = "User: %s Attrib: %s" % (user, attrib)
-        try:
-            my_user = cherrypy.request.db.query(User).filter(User.name==user).one()
-        except NoResultFound:
-            raise cherrypy.HTTPError("404 User %s not found" % user)
         if (cherrypy.request.process_request_body == True):
-            if attrib == "password":
-                my_user.password(cherrypy.request.body.read())
-                return "Password changed"
-            else:
+            my_node = Node.edit_one(session, name, attrib, cherrypy.request.body.read())
+            if isinstance(my_node, Node):
+                return "Node: %s Attrib: %s\nPassword changed" % (name, attrib)
+            elif my_node == -1:
                 raise cherrypy.HTTPError("404 Attribute %s not found" % attrib)
+            elif my_node == -2:
+                raise cherrypy.HTTPError("404 Node %s not found" % name)
         else:
             raise cherrypy.HTTPError("404 No body")
-        return msg + "Password changed"
-        

@@ -25,9 +25,8 @@
 
 __all__=['checkpassword', 'protect']
 import cherrypy
-from cherrypy import tools
 from cherrypy import Tool
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.exc import NoResultFound
 
 def checkpassword():
     def checkpassword(realm, user, password):

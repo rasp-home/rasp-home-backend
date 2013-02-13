@@ -47,8 +47,28 @@ class Role(Base):
     def __repr__(self):
         return "<Role %s>" % (self.name)
     
+<<<<<<< HEAD
     def get_hash_password(self, password):
         return sha512_crypt.encrypt(password)
     
     def check_auth(self, password):
         return sha512_crypt.verify(password, self.password)
+=======
+    def check_auth(self, password):
+        return self.get_hash_password(password) == self.password
+    
+    @staticmethod
+    def get_hash_password(password):
+        return hashlib.sha512(password.encode()).hexdigest()
+    
+    @staticmethod
+    def edit_one(session, my_role, attrib, value):
+        if attrib == "name":
+            my_role.name = value
+            return my_role
+        if attrib == "password":
+            my_role.password = Role.get_hash_password(value)
+            return my_role
+        else:
+            return -1
+>>>>>>> Some changes in Model and Api
