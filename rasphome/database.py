@@ -19,17 +19,13 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
-import os, os.path
- 
+
 import cherrypy
-from cherrypy.process import wspbus, plugins
+from cherrypy.process import plugins
  
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column
-from sqlalchemy.types import String, Integer
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 __all__ = ['SAEnginePlugin', 'SATool', 'set_db_path', 'Base', 'rasp_db_session']
 
@@ -47,7 +43,7 @@ def _rasp_create_engine():
 
 def _rasp_session(engine = None):
     
-    if (engine == None):
+    if engine is None:
         return scoped_session(sessionmaker(autoflush=False, 
                                                 autocommit=False))
     else:
@@ -59,9 +55,9 @@ Base = declarative_base()
 
 def rasp_db_session(f):
     def wrapped_f(*args, **kwargs):
-        engine = _rasp_create_engine();
+        engine = _rasp_create_engine()
         Base.metadata.create_all(engine)
-        session = _rasp_session(engine);
+        session = _rasp_session(engine)
         ret = f(session, *args, **kwargs)
         session.remove()
         engine.dispose()
@@ -95,7 +91,6 @@ class SAEnginePlugin(plugins.SimplePlugin):
     def start(self):
         global general_db_path
         self.sa_engine = create_engine(general_db_path, echo=True, convert_unicode=True)
-        import rasphome.models
         Base.metadata.create_all(self.sa_engine)
  
     def stop(self):

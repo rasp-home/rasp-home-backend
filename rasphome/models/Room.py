@@ -35,7 +35,7 @@ class Room(Base):
     node = relationship("Node", backref="room")
     
     def __init__(self, name):
-        self.name = name;
+        self.name = name
     
     def __repr__(self):
         return "<Room %s>" % (self.name)

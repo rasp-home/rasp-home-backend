@@ -20,15 +20,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
+"""
 rasp-home-central -- Home automation software for Raspberry Pi
 
 
 @author:     Sebastian Wallat
-        
+
 @copyright:  2013 Sebastian Wallat, University Duisburg-Essen
              2013 Andreas Bayer , University Duisburg-Essen
-             
+
 @license:     This file is part of rasp-home-backend.
 
 rasp-home-backend is free software: you can redistribute it and/or modify
@@ -44,8 +44,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-@contact:    sebastian.wallat@uni-due.de    
-'''
+@contact:    sebastian.wallat@uni-due.de
+"""
 
 import sys
 import os
@@ -65,7 +65,7 @@ TESTRUN = 0
 PROFILE = 0
 
 class CLIError(Exception):
-    '''Generic exception to raise and log different fatal errors.'''
+    """Generic exception to raise and log different fatal errors."""
     def __init__(self, msg):
         super(CLIError).__init__(type(self))
         self.msg = "E: %s" % msg
@@ -75,7 +75,7 @@ class CLIError(Exception):
         return self.msg
 
 def main(argv=None): # IGNORE:C0111
-    '''Command line options.'''
+    """Command line options."""
     
     if argv is None:
         argv = sys.argv
@@ -127,7 +127,7 @@ USAGE
         return 0
     except Exception as e:
         if DEBUG or TESTRUN:
-            raise(e)
+            raise e
         indent = len(program_name) * " "
         sys.stderr.write(program_name + ": " + repr(e) + "\n")
         sys.stderr.write(indent + "  for help use --help")

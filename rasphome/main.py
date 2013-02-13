@@ -53,9 +53,10 @@ def create_init_db(session):
 def start_rasp_home_backend():
     ## Set up path to db file
     db_path = os.path.abspath(os.path.join(os.curdir, 'rasp-home.db'))
-    rasphome.database.set_db_path('sqlite:///%s' % (db_path))
+    rasphome.database.set_db_path('sqlite:///%s' % db_path)
     
     ## Set up Admin User name and Default admin user
+    # noinspection PyArgumentList
     create_init_db()
     
     ## Set up Sqlalchemy Plugin and Tool

@@ -90,7 +90,7 @@ class User_api(object):
         if (cherrypy.request.process_request_body == True):
             my_user = User.edit_one(session, name, attrib, cherrypy.request.body.read())
             if isinstance(my_user, User):
-                return "User: %s Attrib: %s\nPassword changed" % (name, attrib)
+                return "User: %s Attrib: %s" % (name, attrib)
             elif my_user == -1:
                 raise cherrypy.HTTPError("404 Attribute %s not found" % attrib)
             elif my_user == -2:
