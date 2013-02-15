@@ -31,7 +31,8 @@ class User(Role):
     __tablename__ = 'user'
     id = Column(Integer, ForeignKey('role.id'), primary_key=True)
     room_id = Column(Integer, ForeignKey('room.id'))
-    isAdmin = Column(Boolean, default=False)
+    receive_room_id = Column(Integer, ForeignKey('room.id'))
+    is_admin = Column(Boolean, default=False)
     
     __mapper_args__ = {
         'polymorphic_identity':'user'
@@ -79,11 +80,18 @@ class User(Role):
                     return my_user
                 else:
                     return -3
-            elif attrib == "isAdmin":
-                if value == "True":
-                    my_user.isAdmin = True
+            if attrib == "receive_room_id":
+                my_room = Room.get_one(session, value)
+                if isinstance(my_room, Room):
+                    my_user.receive_room_id = my_room
+                    return my_user
                 else:
-                    my_user.isAdmin = False
+                    return -3
+            elif attrib == "is_admin":
+                if value == "True":
+                    my_user.is_admin = True
+                else:
+                    my_user.is_admin = False
                 return my_user
             else:
                 return Role.edit_one(session, my_user, attrib, value)

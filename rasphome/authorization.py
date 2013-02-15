@@ -51,18 +51,17 @@ def checkpassword():
     
     return checkpassword
 
-def require(roles = None, user_isAdmin = None):
+def require(roles = None, user_is_admin = None):
     noError = False
     print("Login: %s" % cherrypy.request.login)
     role = cherrypy.request.role
     if roles is not None:
         if role.__class__.__name__ in roles:
-            if role.__class__.__name__ == "User" and user_isAdmin == True:
+            if role.__class__.__name__ == "User" and user_is_admin == True:
                 if role.isAdmin:
                     noError = True
             else :
                 noError = True
-
     if not noError:
         raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.") 
 

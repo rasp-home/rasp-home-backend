@@ -71,7 +71,7 @@ class Monitor_api(object):
     """
     "curl -X DELETE http://admin:admin@localhost:8090/user/andi
     """
-    @cherrypy.tools.require(roles=["Monitor"], user_isAdmin=True)
+    @cherrypy.tools.require(roles=["Monitor"], user_is_admin=True)
     def DELETE(self, name):
         session = cherrypy.request.db
         my_monitor = Monitor.del_one(session, name)

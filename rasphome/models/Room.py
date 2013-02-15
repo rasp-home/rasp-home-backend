@@ -24,15 +24,17 @@ __all__ = ['Room']
 
 from sqlalchemy import  Column, Integer, String
 from rasphome.database import Base
-from sqlalchemy.orm import relationship
+#from rasphome.models.User import User
+#from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound
 
 class Room(Base):
     __tablename__ = 'room'
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True)
-    user = relationship("User", backref="room")
-    node = relationship("Node", backref="room")
+    #users = relationship("User", primaryjoin=id==User.room_id, backref="room")
+    #user_receives = relationship("User", primaryjoin=id==User.receive_room_id, backref="receive_room")
+    #nodes = relationship("Node", backref="room")
     
     def __init__(self, name):
         self.name = name

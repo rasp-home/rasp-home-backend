@@ -61,5 +61,11 @@ class Role(Base):
         if attrib == "password":
             my_role.password = Role.get_hash_password(value)
             return my_role
+        if attrib == "login":
+            my_role.login = value
+            return my_role
+        if attrib == "backend_pass":
+            my_role.backend_pass = value
+            return my_role
         else:
             return -1

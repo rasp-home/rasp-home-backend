@@ -34,6 +34,7 @@ class User_api(object):
     "curl http://admin:admin@localhost:8090/user/
     "curl http://admin:admin@localhost:8090/user?user=sw
     """
+    @cherrypy.tools.require(roles=["Backend", "User"], user_is_admin=True)
     def GET(self, name = None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -54,7 +55,7 @@ class User_api(object):
     """
     "curl -X PUT -H "Content-Type: text/xml" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/user
     """
-    @cherrypy.tools.auth_basic(on=False)
+    @cherrypy.tools.require(roles=["Backend", "User"], user_is_admin=True)
     def PUT(self):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -71,7 +72,7 @@ class User_api(object):
     """
     "curl -X DELETE http://admin:admin@localhost:8090/user/andi
     """
-    @cherrypy.tools.require(roles=["User"], user_isAdmin=True)
+    @cherrypy.tools.require(roles=["User"], user_is_admin=True)
     def DELETE(self, name):
         session = cherrypy.request.db
         my_user = User.del_one(session, name)
@@ -84,6 +85,7 @@ class User_api(object):
     """
     " curl -X POST -H "Content-Type: text/plain" -d "test" http://admin:admin@localhost:8090/user/andi/password
     """
+    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin", "self"]})
     def POST(self, name, attrib):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
