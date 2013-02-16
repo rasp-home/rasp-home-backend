@@ -27,11 +27,11 @@ import rasphome.database
 from rasphome.models import User
 
 class Root(object):
-    
-    @cherrypy.expose
-    def index(self):
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        msg = "Hello World! "
-        if cherrypy.request.login:
-            msg += "Login: %s" % cherrypy.request.login
-        return msg
+    pass
+#    @cherrypy.expose
+#    def index(self):
+#        cherrypy.response.headers['content-type'] = 'text/plain'
+#        msg = "Hello World! "
+#        if cherrypy.request.login:
+#            msg += "Login: %s" % cherrypy.request.login
+#        return msg

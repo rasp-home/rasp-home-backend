@@ -34,16 +34,12 @@ def checkpassword():
         from rasphome.models import Role
         try:
             results = session.query(Role).filter(Role.name == user).all()
-            print("Check results %s" % results)
         except NoResultFound as e:
-            print("noResults")
             return False
         else:
-            print("inFound")
             found = False
             for role in results:
                 if role.check_auth(password):
-                    print("Password match")
                     found = True
                     cherrypy.request.role = role
                     return True
@@ -51,18 +47,23 @@ def checkpassword():
     
     return checkpassword
 
-def require(roles = None, user_is_admin = None):
-    noError = False
-    print("Login: %s" % cherrypy.request.login)
+def require(roles = None):
+    error = False
     role = cherrypy.request.role
+    match_name = cherrypy.request.path_info.split("/")
+    if len(match_name) >= 3:
+        match_name = match_name[2]
+    else:
+        match_name = None
     if roles is not None:
         if role.__class__.__name__ in roles:
-            if role.__class__.__name__ == "User" and user_is_admin == True:
-                if role.isAdmin:
-                    noError = True
-            else :
-                noError = True
-    if not noError:
+            if "is_admin" in roles[role.__class__.__name__]:
+                if role.is_admin:
+                    error = True
+            elif "self" in roles[role.__class__.__name__]:
+                if match_name != None and match_name != role.name:
+                    error = True
+    if error:
         raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.") 
 
 cherrypy.tools.require = Tool('before_handler', require)

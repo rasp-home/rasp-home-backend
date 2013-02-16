@@ -31,9 +31,9 @@ class Monitor_api(object):
     exposed = True
     
     """
-    "curl http://admin:admin@localhost:8090/user/
-    "curl http://admin:admin@localhost:8090/user?user=sw
+    "curl http://admin:admin@localhost:8090/monitor/
     """
+    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[]})
     def GET(self, name = None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -49,13 +49,12 @@ class Monitor_api(object):
                 return "Monitor: \n" + str(my_monitor) + "\n"
             else:
                 raise cherrypy.HTTPError("404 Monitor %s not found" % name)
-            
     
     """
-    "curl -X PUT -H "Content-Type: text/xml" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/user
+    " curl -X POST -H "Content-Type: text/plain" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/monitor
     """
-    @cherrypy.tools.auth_basic(on=False)
-    def PUT(self):
+    @cherrypy.tools.require(roles={"Backend":[]})
+    def POST(self):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
@@ -66,25 +65,13 @@ class Monitor_api(object):
             Monitor.add_one(session, name, password)
             return "Monitor %s added." % (name)
         else:
-            raise cherrypy.HTTPError("404 No body")
+            raise cherrypy.HTTPError("404 No body specified")
     
     """
-    "curl -X DELETE http://admin:admin@localhost:8090/user/andi
+    "curl -X PUT -H "Content-Type: text/xml" -d "test" http://admin:admin@localhost:8090/monitor/test/name
     """
-    @cherrypy.tools.require(roles=["Monitor"], user_is_admin=True)
-    def DELETE(self, name):
-        session = cherrypy.request.db
-        my_monitor = Monitor.del_one(session, name)
-        if my_monitor == 0:
-            cherrypy.response.headers['content-type'] = 'text/plain'
-            return "Monitor deleted"
-        else:
-            raise cherrypy.HTTPError("404 Monitor %s not found" % name)
-    
-    """
-    " curl -X POST -H "Content-Type: text/plain" -d "test" http://admin:admin@localhost:8090/user/andi/password
-    """
-    def POST(self, name, attrib):
+    @cherrypy.tools.auth_basic(on=False)
+    def PUT(self, name, attrib):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
@@ -96,4 +83,17 @@ class Monitor_api(object):
             elif my_monitor == -2:
                 raise cherrypy.HTTPError("404 Monitor %s not found" % name)
         else:
-            raise cherrypy.HTTPError("404 No body")
+            raise cherrypy.HTTPError("404 No body specified")
+    
+    """
+    "curl -X DELETE http://admin:admin@localhost:8090/monitor/test
+    """
+    @cherrypy.tools.require(roles={"Backend":[], "Monitor":["self"]})
+    def DELETE(self, name):
+        session = cherrypy.request.db
+        my_monitor = Monitor.del_one(session, name)
+        if my_monitor == 0:
+            cherrypy.response.headers['content-type'] = 'text/plain'
+            return "Monitor deleted"
+        else:
+            raise cherrypy.HTTPError("404 Monitor %s not found" % name)

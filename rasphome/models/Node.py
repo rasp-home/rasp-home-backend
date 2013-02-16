@@ -33,7 +33,8 @@ class Node(Role):
     room_id = Column(Integer, ForeignKey('room.id'))
     title = Column(String(50))
     type = Column(String(50))
-    value = Column(String(50))
+    input = Column(String(50))
+    output = Column(String(50))
     
     __mapper_args__ = {
         'polymorphic_identity':'node'
@@ -87,8 +88,11 @@ class Node(Role):
             elif attrib == "type":
                 my_node.type = value
                 return my_node
-            elif attrib == "value":
-                my_node.value = value
+            elif attrib == "input":
+                my_node.input = value
+                return my_node
+            elif attrib == "output":
+                my_node.output = value
                 return my_node
             else:
                 return Role.edit_one(session, my_node, attrib, value)

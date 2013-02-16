@@ -22,13 +22,14 @@
 
 __all__ = ['Backend']
 
-from sqlalchemy import  Column, Integer, ForeignKey
+from sqlalchemy import  Column, Integer, String, Boolean, ForeignKey
 from rasphome.models.Role import Role
 from sqlalchemy.orm.exc import NoResultFound
 
 class Backend(Role):
     __tablename__ = 'backend'
     id = Column(Integer, ForeignKey('role.id'), primary_key=True)
+    master = Column(Boolean)
     
     __mapper_args__ = {
         'polymorphic_identity':'backend'

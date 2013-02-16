@@ -31,9 +31,10 @@ class Backend_api(object):
     exposed = True
     
     """
-    "curl http://admin:admin@localhost:8090/user/
-    "curl http://admin:admin@localhost:8090/user?user=sw
+    "curl http://admin:admin@localhost:8090/backend/
+    "curl http://admin:admin@localhost:8090/backend?master=true
     """
+    @cherrypy.tools.require(roles={"Backend":[]})
     def GET(self, name = None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -49,13 +50,12 @@ class Backend_api(object):
                 return "Backend: \n" + str(my_backend) + "\n"
             else:
                 raise cherrypy.HTTPError("404 Backend %s not found" % name)
-            
     
     """
-    "curl -X PUT -H "Content-Type: text/xml" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/user
+    " curl -X POST -H "Content-Type: text/plain" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/backend
     """
-    @cherrypy.tools.auth_basic(on=False)
-    def PUT(self):
+    @cherrypy.tools.require(roles={"Backend":[]})
+    def POST(self):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
@@ -66,25 +66,13 @@ class Backend_api(object):
             Backend.add_one(session, name, password)
             return "Backend %s added." % (name)
         else:
-            raise cherrypy.HTTPError("404 No body")
+            raise cherrypy.HTTPError("404 No body specified")
     
     """
-    "curl -X DELETE http://admin:admin@localhost:8090/user/andi
+    "curl -X PUT -H "Content-Type: text/xml" -d "test" http://admin:admin@localhost:8090/backend/test/master
     """
-    @cherrypy.tools.require(roles=["User"], user_is_admin=True)
-    def DELETE(self, name):
-        session = cherrypy.request.db
-        my_backend = Backend.del_one(session, name)
-        if my_backend == 0:
-            cherrypy.response.headers['content-type'] = 'text/plain'
-            return "User deleted"
-        else:
-            raise cherrypy.HTTPError("404 User %s not found" % name)
-    
-    """
-    " curl -X POST -H "Content-Type: text/plain" -d "test" http://admin:admin@localhost:8090/user/andi/password
-    """
-    def POST(self, name, attrib):
+    @cherrypy.tools.auth_basic(on=False)
+    def PUT(self, name, attrib):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
@@ -96,4 +84,17 @@ class Backend_api(object):
             elif my_backend == -2:
                 raise cherrypy.HTTPError("404 User %s not found" % name)
         else:
-            raise cherrypy.HTTPError("404 No body")
+            raise cherrypy.HTTPError("404 No body specified")
+    
+    """
+    "curl -X DELETE http://admin:admin@localhost:8090/backend/test
+    """
+    @cherrypy.tools.require(roles={"Backend":[]})
+    def DELETE(self, name):
+        session = cherrypy.request.db
+        my_backend = Backend.del_one(session, name)
+        if my_backend == 0:
+            cherrypy.response.headers['content-type'] = 'text/plain'
+            return "User deleted"
+        else:
+            raise cherrypy.HTTPError("404 User %s not found" % name)

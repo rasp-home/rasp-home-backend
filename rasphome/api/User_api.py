@@ -31,12 +31,13 @@ class User_api(object):
     exposed = True
     
     """
-    "curl http://admin:admin@localhost:8090/user/
-    "curl http://admin:admin@localhost:8090/user?user=sw
+    "curl http://admin:admin@localhost:8090/user
+    "curl http://admin:admin@localhost:8090/user?room=test
     """
-    @cherrypy.tools.require(roles=["Backend", "User"], user_is_admin=True)
+    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[], "User":["is_admin"]})
     def GET(self, name = None):
         session = cherrypy.request.db
+        print(cherrypy.request.script_name)
         cherrypy.response.headers['content-type'] = 'text/plain'
         if name == None:
             msg = "All Users: \n"
@@ -50,43 +51,28 @@ class User_api(object):
                 return "User: \n" + str(my_user) + "\n"
             else:
                 raise cherrypy.HTTPError("404 User %s not found" % name)
-            
     
     """
-    "curl -X PUT -H "Content-Type: text/xml" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/user
+    " curl -X POST -H "Content-Type: text/plain" -d "<user><name>test</name><password>test</password></user>" http://admin:admin@localhost:8090/user
     """
-    @cherrypy.tools.require(roles=["Backend", "User"], user_is_admin=True)
-    def PUT(self):
+    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin", "self"]})
+    def POST(self):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
             tree = xml.etree.ElementTree.fromstring(cherrypy.request.body.read())
             name = tree.find("name").text
             password = tree.find("password").text
-            
             User.add_one(session, name, password)
             return "User %s added." % (name)
         else:
-            raise cherrypy.HTTPError("404 No body")
+            raise cherrypy.HTTPError("404 No body specified")
     
     """
-    "curl -X DELETE http://admin:admin@localhost:8090/user/andi
+    "curl -X PUT -H "Content-Type: text/xml" -d "test" http://admin:admin@localhost:8090/user/test/password
     """
-    @cherrypy.tools.require(roles=["User"], user_is_admin=True)
-    def DELETE(self, name):
-        session = cherrypy.request.db
-        my_user = User.del_one(session, name)
-        if my_user == 0:
-            cherrypy.response.headers['content-type'] = 'text/plain'
-            return "User deleted"
-        else:
-            raise cherrypy.HTTPError("404 User %s not found" % name)
-    
-    """
-    " curl -X POST -H "Content-Type: text/plain" -d "test" http://admin:admin@localhost:8090/user/andi/password
-    """
-    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin", "self"]})
-    def POST(self, name, attrib):
+    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin"]})
+    def PUT(self, name, attrib):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
@@ -98,4 +84,17 @@ class User_api(object):
             elif my_user == -2:
                 raise cherrypy.HTTPError("404 User %s not found" % name)
         else:
-            raise cherrypy.HTTPError("404 No body")
+            raise cherrypy.HTTPError("404 No body specified")
+        
+    """
+    "curl -X DELETE http://admin:admin@localhost:8090/user/test
+    """
+    @cherrypy.tools.require(roles={"User":["is_admin"]})
+    def DELETE(self, name):
+        session = cherrypy.request.db
+        my_user = User.del_one(session, name)
+        if my_user == 0:
+            cherrypy.response.headers['content-type'] = 'text/plain'
+            return "User deleted"
+        else:
+            raise cherrypy.HTTPError("404 User %s not found" % name)

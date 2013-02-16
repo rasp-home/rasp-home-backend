@@ -28,7 +28,7 @@ from passlib.hash import sha512_crypt
 
 class Role(Base):
     __tablename__ = 'role'
-    id = Column(Integer, primary_key = True)
+    id = Column(Integer, primary_key=True)
     type = Column(String(50))
     name = Column(String(50), unique=True)
     password = Column(String(128))

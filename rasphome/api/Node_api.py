@@ -31,9 +31,10 @@ class Node_api(object):
     exposed = True
     
     """
-    "curl http://admin:admin@localhost:8090/user/
-    "curl http://admin:admin@localhost:8090/user?user=sw
+    "curl http://admin:admin@localhost:8090/node
+    "curl http://admin:admin@localhost:8090/node?room=test
     """
+    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[], "User":[]})
     def GET(self, name = None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -49,13 +50,12 @@ class Node_api(object):
                 return "Node: \n" + str(my_node) + "\n"
             else:
                 raise cherrypy.HTTPError("404 Node %s not found" % name)
-            
     
     """
-    "curl -X PUT -H "Content-Type: text/xml" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/user
+    " curl -X POST -H "Content-Type: text/plain" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/node
     """
-    @cherrypy.tools.auth_basic(on=False)
-    def PUT(self):
+    @cherrypy.tools.require(roles={"Backend":[], "Node":["self"], "User":[]})
+    def POST(self):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
@@ -66,25 +66,13 @@ class Node_api(object):
             Node.add_one(session, name, password)
             return "Node %s added." % (name)
         else:
-            raise cherrypy.HTTPError("404 No body")
+            raise cherrypy.HTTPError("404 No body specified")
     
     """
-    "curl -X DELETE http://admin:admin@localhost:8090/user/andi
+    "curl -X PUT -H "Content-Type: text/xml" -d "test" http://admin:admin@localhost:8090/node/test/input
     """
-    @cherrypy.tools.require(roles=["Node"], user_is_admin=True)
-    def DELETE(self, name):
-        session = cherrypy.request.db
-        my_node = Node.del_one(session, name)
-        if my_node == 0:
-            cherrypy.response.headers['content-type'] = 'text/plain'
-            return "Node deleted"
-        else:
-            raise cherrypy.HTTPError("404 Node %s not found" % name)
-    
-    """
-    " curl -X POST -H "Content-Type: text/plain" -d "test" http://admin:admin@localhost:8090/user/andi/password
-    """
-    def POST(self, name, attrib):
+    @cherrypy.tools.auth_basic(on=False)
+    def PUT(self, name, attrib):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if (cherrypy.request.process_request_body == True):
@@ -96,4 +84,17 @@ class Node_api(object):
             elif my_node == -2:
                 raise cherrypy.HTTPError("404 Node %s not found" % name)
         else:
-            raise cherrypy.HTTPError("404 No body")
+            raise cherrypy.HTTPError("404 No body specified")
+    
+    """
+    "curl -X DELETE http://admin:admin@localhost:8090/node/test
+    """
+    @cherrypy.tools.require(roles={"Backend":[], "Node":["self"]})
+    def DELETE(self, name):
+        session = cherrypy.request.db
+        my_node = Node.del_one(session, name)
+        if my_node == 0:
+            cherrypy.response.headers['content-type'] = 'text/plain'
+            return "Node deleted"
+        else:
+            raise cherrypy.HTTPError("404 Node %s not found" % name)
