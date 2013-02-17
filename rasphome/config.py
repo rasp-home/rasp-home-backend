@@ -49,13 +49,31 @@ class ConfigSection(object):
         return self.__class__.__getattribute__(self, optionName)
 
     def addOption(self, option, defaultValue):
-        return self.__setOption(option, self.__getOption(option, defaultValue))
+        assert isinstance(defaultValue, str)
+        try:
+            setVal = str(self._getOption(option, defaultValue))
+        except ValueError:
+            setVal = defaultValue
+
+        return self.__setOption(option, setVal)
 
     def addBoolOption(self, option, defaultValue):
-        return self.__setOption(option, self.bool(self.__getOption(option, defaultValue)))
+        assert isinstance(defaultValue, bool)
+        try:
+            setVal = self.bool(self.__getOption(option, defaultValue))
+        except ValueError:
+            setVal = defaultValue
+
+        return self.__setOption(option, setVal)
 
     def addIntOption(self, option, defaultValue):
-        return self.__setOption(option, int(self.__getOption(option, defaultValue)))
+        assert isinstance(defaultValue, int)
+        try:
+            setVal = int(self.__getOption(option, defaultValue))
+        except ValueError:
+            setVal = defaultValue
+
+        return self.__setOption(option, setVal)
 
 
 rasp_settings = ConfigSection(config, "rasp-home")

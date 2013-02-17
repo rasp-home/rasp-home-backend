@@ -26,6 +26,7 @@ import rasphome.database
 import rasphome.authorization
 import rasphome.api
 import os.path
+from logging import handlers, DEBUG, Formatter
         
 def create_user(session, username, password):
     from rasphome.models import User
@@ -51,6 +52,34 @@ def create_init_db(session):
     create_user(session, username="admin", password="admin")
     create_node(session, username="test", password="test")
 
+def setUpLogger():
+    log = cherrypy.log
+
+    log.error_file = ""
+    log.access_file = ""
+    maxBytes = getattr(log, "rot_maxBytes", 10000000)
+    backupCount = getattr(log, "rot_backupCount", 1000)
+
+    # Make a new RotatingFileHandler for the error log.
+    fname = getattr(log, "rot_error_file", "error.log")
+    print("Error log filename: %s" % fname)
+    h = handlers.RotatingFileHandler(fname, 'a', maxBytes, backupCount)
+    h.setLevel(DEBUG)
+    formatter = Formatter("%(asctime)s %(name)-12s %(threadName)-10s %(levelname)-8s %(message)s")
+    h.setFormatter(formatter)
+    log.error_log.addHandler(h)
+
+    # Make a new RotatingFileHandler for the access log.
+    fname = getattr(log, "rot_access_file", "access.log")
+    print("Access log filename: %s" % fname)
+    h = handlers.RotatingFileHandler(fname, 'a', maxBytes, backupCount)
+    h.setLevel(DEBUG)
+    formatter = Formatter("%(asctime)s %(name)-12s %(threadName)-10s %(levelname)-8s %(message)s")
+    h.setFormatter(formatter)
+    log.access_log.addHandler(h)
+
+    cherrypy.log = log
+
 def start_rasp_home_backend():
     """
     Start rasp-home-backend
@@ -59,8 +88,6 @@ def start_rasp_home_backend():
     ## Set up path to db file
     db_path = os.path.abspath(os.path.join(os.curdir, 'rasp-home.db'))
     rasphome.database.set_db_path('sqlite:///%s' % db_path)
-
-    print("Http-Port %d" % (rasphome.config.rasp_settings.http_port))
     
     ## Set up Admin User name and Default admin user
     # noinspection PyArgumentList
@@ -99,9 +126,7 @@ def start_rasp_home_backend():
     root.node = rasphome.api.Node_api()
     root.room = rasphome.api.Room_api()
     root.user = rasphome.api.User_api()
-    
-    #application = cherrypy.tree.mount(root, '/', config)
-    
-    #cherrypy.engine.start()
-    
+
+    setUpLogger()
+
     cherrypy.quickstart(root, '/', config)
