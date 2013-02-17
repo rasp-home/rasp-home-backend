@@ -80,26 +80,22 @@ def setUpLogger():
 
     cherrypy.log = log
 
-def start_rasp_home_backend():
-    """
-    Start rasp-home-backend
-    :return:
-    """
+def _get_root_start():
     ## Set up path to db file
     db_path = os.path.abspath(os.path.join(os.curdir, 'rasp-home.db'))
     rasphome.database.set_db_path('sqlite:///%s' % db_path)
-    
+
     ## Set up Admin User name and Default admin user
     # noinspection PyArgumentList
     create_init_db()
-    
+
     ## Set up Sqlalchemy Plugin and Tool
     rasphome.database.SAEnginePlugin(cherrypy.engine).subscribe()
     cherrypy.tools.db = rasphome.database.SATool()
-    
+
     ## Set standard port
     cherrypy.config.update({'server.socket_port': rasp_settings.http_port})
-    
+
     ## Activate additional SSL Server
     from cherrypy._cpserver import Server
     server = Server()
@@ -107,18 +103,18 @@ def start_rasp_home_backend():
     server.ssl_certificate = './cert.pem'
     server.ssl_private_key = './privatekey.pem'
     server.subscribe()
-    
+
     ## Do other config
-    config = { 
-              '/' : {
-                     'tools.auth_basic.on': True,
-                     'tools.auth_basic.realm': 'earth',
-                     'tools.auth_basic.checkpassword': rasphome.authorization.checkpassword(),
-                     'tools.db.on' : True,
-                     'request.dispatch': cherrypy.dispatch.MethodDispatcher()
-                     }
-              }
-    
+    config = {
+        '/' : {
+            'tools.auth_basic.on': True,
+            'tools.auth_basic.realm': 'earth',
+            'tools.auth_basic.checkpassword': rasphome.authorization.checkpassword(),
+            'tools.db.on' : True,
+            'request.dispatch': cherrypy.dispatch.MethodDispatcher()
+        }
+    }
+
     ## Set up Api
     root = rasphome.api.Root()
     root.backend = rasphome.api.Backend_api()
@@ -128,5 +124,16 @@ def start_rasp_home_backend():
     root.user = rasphome.api.User_api()
 
     setUpLogger()
+    return root, config
 
-    cherrypy.quickstart(root, '/', config)
+
+def start_rasp_home_backend(testing=False):
+    """
+    Start rasp-home-backend
+    :return:
+    """
+    root, config = _get_root_start()
+    if not testing:
+        cherrypy.quickstart(root, '/', config)
+    else:
+        cherrypy.tree.mount(root, '/', config)
