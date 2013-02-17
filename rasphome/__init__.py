@@ -20,6 +20,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
 
+import rasphome.config
 import rasphome.models
 import rasphome.api
 import rasphome.authorization

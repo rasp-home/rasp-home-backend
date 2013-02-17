@@ -20,6 +20,7 @@
 # You should have received a copy of the GNU Lesser General Publ     ic License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
 
+from rasphome.config import rasp_settings
 import cherrypy
 import rasphome.database
 import rasphome.authorization
@@ -51,9 +52,15 @@ def create_init_db(session):
     create_node(session, username="test", password="test")
 
 def start_rasp_home_backend():
+    """
+    Start rasp-home-backend
+    :return:
+    """
     ## Set up path to db file
     db_path = os.path.abspath(os.path.join(os.curdir, 'rasp-home.db'))
     rasphome.database.set_db_path('sqlite:///%s' % db_path)
+
+    print("Http-Port %d" % (rasphome.config.rasp_settings.http_port))
     
     ## Set up Admin User name and Default admin user
     # noinspection PyArgumentList
@@ -64,12 +71,12 @@ def start_rasp_home_backend():
     cherrypy.tools.db = rasphome.database.SATool()
     
     ## Set standard port
-    cherrypy.config.update({'server.socket_port': 8090})
+    cherrypy.config.update({'server.socket_port': rasp_settings.http_port})
     
     ## Activate additional SSL Server
     from cherrypy._cpserver import Server
     server = Server()
-    server.socket_port = 8091
+    server.socket_port = rasp_settings.https_port
     server.ssl_certificate = './cert.pem'
     server.ssl_private_key = './privatekey.pem'
     server.subscribe()
