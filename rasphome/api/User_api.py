@@ -20,10 +20,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with rasp-home-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__=['User_api']
+__all__ = ['User_api']
 
 import cherrypy
-import xml.etree.ElementTree
 from rasphome import authorization
 from rasphome.models.User import User
 
@@ -32,69 +31,99 @@ class User_api(object):
     
     """
     "curl http://admin:admin@localhost:8090/user
-    "curl http://admin:admin@localhost:8090/user?room=test
+    "curl http://admin:admin@localhost:8090/user?room=room1
+    "curl http://admin:admin@localhost:8090/user/admin
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[], "User":["is_admin"]})
-    def GET(self, name = None):
+    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[], "User":["admin"]})
+    def GET(self, name=None, room=None):
         session = cherrypy.request.db
-        print(cherrypy.request.script_name)
         cherrypy.response.headers['content-type'] = 'text/plain'
         if name == None:
-            msg = "All Users: \n"
-            result = User.get_all(session)
-            for name in result:
-                msg = msg + str(name) + "\n"
-            return msg
+            elements = User.get_all(session, room)
+            if isinstance(elements, list):
+                return User.export_all(elements, ["name", "room", "receive_room"])
+            elif elements == User.ERROR_VALUE_NOT_VALID:
+                raise cherrypy.HTTPError("404", "Value %s of attribute %s not valid" % room, "room")
         else:
-            my_user = User.get_one(session, name)
-            if isinstance(my_user, User):
-                return "User: \n" + str(my_user) + "\n"
+            element = User.get_one(session, name)
+            if isinstance(element, User):
+                return User.export_one(element, "all")
+            elif elements == User.ERROR_ELEMENT_NOT_EXISTS:
+                raise cherrypy.HTTPError("404", "User %s not found" % name)
+    
+    """
+    " curl -X PUT -H "Content-Type: text/xml" -d "<user><password>user1</password><receive_room>test2</receive_room></user>" http://admin:admin@localhost:8090/user/user1
+    " curl -X PUT -H "Content-Type: text/plain" -d "user1" http://admin:admin@localhost:8090/user/user1/password
+    " curl -X PUT -H "Content-Type: text/plain" -d "room1" http://admin:admin@localhost:8090/user/user1/room
+    """
+    @cherrypy.tools.require(roles={"Backend":[], "User":["admin", "self"]})
+    def PUT(self, name, attrib=None):
+        session = cherrypy.request.db
+        cherrypy.response.headers['content-type'] = 'text/plain'
+        body = cherrypy.request.body.read().decode()
+        if (cherrypy.request.process_request_body == True):
+            if attrib == None:
+                element = User.import_one(session, body, name=name)
+                if isinstance(element, User):
+                    element = User.add_one(session, element)
+                    if isinstance(element, User):
+                        return "User %s added" % name
+                    elif element == User.ERROR_ELEMENT_ALREADY_EXISTS:
+                        raise cherrypy.HTTPError("403", "User %s alread exists" % name)
+                elif element == User.ERROR_VALUE_NOT_VALID:
+                    raise cherrypy.HTTPError("403", "Value of attribute not valid")
+                elif element == User.ERROR_TAG_NOT_VALID:
+                    raise cherrypy.HTTPError("400", "Tag not valid")
             else:
-                raise cherrypy.HTTPError("404 User %s not found" % name)
+                element = User.get_one(session, name)
+                if isinstance(element, User):
+                    element = User.edit_one(session, element, attrib, body)
+                    if isinstance(element, User):
+                        return "User %s attribute %s value %s changed" % (name, attrib, body)
+                    elif element == User.ERROR_VALUE_NOT_VALID:
+                        raise cherrypy.HTTPError("403", "Value %s of attribute %s not valid" % (body, attrib))
+                    elif element == User.ERROR_ATTRIB_NOT_VALID:
+                        raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
+                elif element == User.ERROR_ELEMENT_NOT_EXISTS:
+                    raise cherrypy.HTTPError("404", "User %s not found" % name)
+        else:
+            raise cherrypy.HTTPError("400", "No body specified")
     
     """
-    " curl -X POST -H "Content-Type: text/plain" -d "<user><name>test</name><password>test</password></user>" http://admin:admin@localhost:8090/user
+    "curl -X POST -H "Content-Type: text/xml" -d "<user><login>False</login><serverport>8000</serverport></user>" http://admin:admin@localhost:8090/user/user1
+    "curl -X POST -H "Content-Type: text/xml" -d "<user><room>room1</room><receive_room>room2</receive_room></user>" http://admin:admin@localhost:8090/user/user1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin", "self"]})
-    def POST(self):
+    @cherrypy.tools.require(roles={"Backend":[], "User":["admin"]})
+    def POST(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
+        body = cherrypy.request.body.read().decode()
         if (cherrypy.request.process_request_body == True):
-            tree = xml.etree.ElementTree.fromstring(cherrypy.request.body.read())
-            name = tree.find("name").text
-            password = tree.find("password").text
-            User.add_one(session, name, password)
-            return "User %s added." % (name)
+            element = User.get_one(session, name)
+            if isinstance(element, User):
+                element = User.import_one(session, body, element=element)
+                if isinstance(element, User):
+                    return "User %s updated" % name
+                elif element == User.ERROR_VALUE_NOT_VALID:
+                    raise cherrypy.HTTPError("403", "Value of attribute not valid")
+                elif element == User.ERROR_TAG_NOT_VALID:
+                    raise cherrypy.HTTPError("400", "Tag not valid")
+            elif element == User.ERROR_ELEMENT_NOT_EXISTS:
+                raise cherrypy.HTTPError("404", "User %s not found" % name)
         else:
-            raise cherrypy.HTTPError("404 No body specified")
-    
-    """
-    "curl -X PUT -H "Content-Type: text/xml" -d "test" http://admin:admin@localhost:8090/user/test/password
-    """
-    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin"]})
-    def PUT(self, name, attrib):
-        session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        if (cherrypy.request.process_request_body == True):
-            my_user = User.edit_one(session, name, attrib, cherrypy.request.body.read())
-            if isinstance(my_user, User):
-                return "User: %s Attrib: %s" % (name, attrib)
-            elif my_user == -1:
-                raise cherrypy.HTTPError("404 Attribute %s not found" % attrib)
-            elif my_user == -2:
-                raise cherrypy.HTTPError("404 User %s not found" % name)
-        else:
-            raise cherrypy.HTTPError("404 No body specified")
+            raise cherrypy.HTTPError("400", "No body specified")
         
     """
-    "curl -X DELETE http://admin:admin@localhost:8090/user/test
+    "curl -X DELETE http://admin:admin@localhost:8090/user/user1
     """
-    @cherrypy.tools.require(roles={"User":["is_admin"]})
+    @cherrypy.tools.require(roles={"Backend":[], "User":["admin"]})
     def DELETE(self, name):
         session = cherrypy.request.db
-        my_user = User.del_one(session, name)
-        if my_user == 0:
-            cherrypy.response.headers['content-type'] = 'text/plain'
-            return "User deleted"
-        else:
-            raise cherrypy.HTTPError("404 User %s not found" % name)
+        cherrypy.response.headers['content-type'] = 'text/plain'
+        element = User.get_one(session, name)
+        if isinstance(element, User):
+            element = User.del_one(session, element)
+            if isinstance(element, User):
+                return "User %s deleted" % name
+        elif element == User.ERROR_ELEMENT_NOT_EXISTS:
+            raise cherrypy.HTTPError("404", "User %s not found" % name)

@@ -25,8 +25,11 @@ __all__ = ['Role']
 from sqlalchemy import Column, Integer, String, Boolean
 from rasphome.database import Base
 from passlib.hash import sha512_crypt
+from xml.etree import ElementTree
 
 class Role(Base):
+    ERROR_ATTRIB_NOT_VALID = -1
+    
     __tablename__ = 'role'
     id = Column(Integer, primary_key=True)
     type = Column(String(50))
@@ -34,15 +37,14 @@ class Role(Base):
     password = Column(String(128))
     login = Column(Boolean, default=False)
     backend_pass = Column(String(50))
+    ip = Column(String(50))
+    serverport = Column(Integer)
+    zeroconfport = Column(Integer)
     
     __mapper_args__ = {
         'polymorphic_identity':'role',
         'polymorphic_on':type
     }
-    
-    def __init__(self, name, password):
-        self.name = name
-        self.password = self.get_hash_password(password)
         
     def __repr__(self):
         return "<Role %s>" % self.name
@@ -50,22 +52,92 @@ class Role(Base):
     def check_auth(self, password):
         return sha512_crypt.verify(password, self.password)
     
-    def get_hash_password(self, password):
+    @staticmethod
+    def get_hashed_password(password):
         return sha512_crypt.encrypt(password)
     
     @staticmethod
-    def edit_one(session, my_role, attrib, value):
-        if attrib == "name":
-            my_role.name = value
-            return my_role
-        if attrib == "password":
-            my_role.password = Role.get_hash_password(value)
-            return my_role
-        if attrib == "login":
-            my_role.login = value
-            return my_role
-        if attrib == "backend_pass":
-            my_role.backend_pass = value
-            return my_role
+    def export_one(tree, element, attribs):
+        if "id" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "id")
+            attrib.text = str(element.id)
+        if "name" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "name")
+            attrib.text = element.name
+        if "password" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "password")
+            attrib.text = element.password
+        if "login" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "login")
+            if element.login != None:
+                attrib.text = str(element.login)
+        if "backend_pass" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "backend_pass")
+            attrib.text = element.backend_pass
+        if "ip" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "ip")
+            attrib.text = element.ip
+        if "serverport" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "serverport")
+            if element.serverport != None:
+                attrib.text = str(element.serverport)
+        if "serverport" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "zeroconfport")
+            if element.zeroconfport != None:
+                attrib.text = str(element.zeroconfport)
+        return tree
+    
+    @staticmethod
+    def edit_one(element, attrib, value):
+        if attrib == "id":
+            element.id = value
+        elif attrib == "name":
+            element.name = value
+        elif attrib == "password":
+            if sha512_crypt.identify(value) == True:
+                element.password = value
+            else:
+                element.password = Role.get_hashed_password(value)
+        elif attrib == "login":
+            if value == "True":
+                element.login = True
+            else:
+                element.login = False
+        elif attrib == "backend_pass":
+            element.backend_pass = value
+        elif attrib == "ip":
+            element.ip = value
+        elif attrib == "serverport":
+            element.serverport = value
+        elif attrib == "zeroconfport":
+            element.zeroconfport = value
         else:
-            return -1
+            return Role.ERROR_ATTRIB_NOT_VALID
+        return element
+
+    @staticmethod
+    def import_one(tree, element, name=None):
+        id = tree.findtext("id")
+        if id != None:
+            Role.edit_one(element, "id", id)
+        if name != None:
+            Role.edit_one(element, "name", name)
+        password = tree.findtext("password")
+        if password != None:
+            Role.edit_one(element, "password", password)
+        login = tree.findtext("login")
+        if login != None:
+            Role.edit_one(element, "login", login)
+        backend_pass = tree.findtext("backend_pass")
+        if backend_pass != None:
+            Role.edit_one(element, "backend_pass", backend_pass)
+        ip = tree.findtext("ip")
+        if ip != None:
+            Role.edit_one(element, "ip", ip)
+        serverport = tree.findtext("serverport")
+        if serverport != None:
+            Role.edit_one(element, "serverport", serverport)
+        zeroconfport = tree.findtext("zeroconfport")
+        if zeroconfport != None:
+            Role.edit_one(element, "zeroconfport", zeroconfport)
+        return element

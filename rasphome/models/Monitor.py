@@ -23,10 +23,15 @@
 __all__ = ['Monitor']
 
 from sqlalchemy import  Column, Integer, ForeignKey
-from rasphome.models.Role import Role
 from sqlalchemy.orm.exc import NoResultFound
+from xml.etree import ElementTree
+from rasphome.models.Role import Role
 
-class Monitor(Role):
+class Monitor(Role):    
+    ERROR_ELEMENT_ALREADY_EXISTS = -3
+    ERROR_ELEMENT_NOT_EXISTS = -4
+    ERROR_TAG_NOT_VALID = -5
+    
     __tablename__ = 'monitor'
     id = Column(Integer, ForeignKey('role.id'), primary_key=True)
     
@@ -34,12 +39,23 @@ class Monitor(Role):
         'polymorphic_identity':'monitor'
     }
     
-    def __init__(self, name, password):
-        super().__init__(name, password)
-    
     def __repr__(self):
         return "<Monitor %s>" % (self.name)
 
+    @staticmethod
+    def export_one(element, attribs):
+        tree = ElementTree.Element("monitor")
+        tree = Role.export_one(tree, element, attribs)
+        return ElementTree.tostring(tree, "UTF-8")
+    
+    @staticmethod
+    def export_all(elements, attribs):
+        tree = ElementTree.Element("monitors")
+        if len(elements) > 0:
+            for element in elements:
+                tree.append(ElementTree.fromstring(Monitor.export_one(element, attribs)))
+        return ElementTree.tostring(tree, "UTF-8")
+    
     @staticmethod
     def get_all(session):
         return session.query(Monitor).all()
@@ -49,26 +65,60 @@ class Monitor(Role):
         try:
             return session.query(Monitor).filter(Monitor.name == name).one()
         except NoResultFound:
-            return -1
+            return Monitor.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def add_one(session, name, password):
-        session.add(Monitor(name, password))
-        session.commit()
-    
+    def add_one(session, new_element):
+        element = Monitor.get_one(session, new_element.name)
+        if element == Monitor.ERROR_ELEMENT_NOT_EXISTS:
+            session.add(new_element)
+            return new_element
+        else:
+            return Monitor.ERROR_ELEMENT_ALREADY_EXISTS
+
     @staticmethod
-    def del_one(session, name):
-        try:
-            my_monitor = session.query(Monitor).filter(Monitor.name == name).one()
-            session.delete(my_monitor)
-            return 0
-        except NoResultFound:
-            return -1
+    def add_all(session, new_elements):
+        session.add_all(new_elements)
         
     @staticmethod
-    def edit_one(session, name, attrib, value):
-        my_monitor = Monitor.get_one(session, name)
-        if isinstance(my_monitor, Monitor):
-            Role.edit_one(session, my_monitor, attrib, value)
+    def del_one(session, element):
+        element = Monitor.get_one(session, element.name)
+        if isinstance(element):
+            session.delete(element)
+            return element
         else:
-            return -2
+            return Monitor.ERROR_ELEMENT_NOT_EXISTS
+    
+    @staticmethod
+    def delete_all(session):
+        session.query(Monitor).delete()
+        
+    @staticmethod
+    def edit_one(session, element, attrib, value):
+        return Role.edit_one(element, attrib, value)
+    
+    @staticmethod
+    def import_one(session, input, element=None, name=None):
+        if element == None:
+            element = Monitor()
+        tree = ElementTree.fromstring(input)
+        if tree.tag == "monitor":
+            element = Role.import_one(tree, element, name)
+            return element
+        else:
+            return Monitor.ERROR_TAG_NOT_VALID
+            
+    @staticmethod
+    def import_all(session, input):
+        elements = []
+        tree = ElementTree.fromstring(input)
+        if tree.tag == "monitors":
+            for element in tree.findall("monitor"):
+                new_element = Monitor.import_one(session, ElementTree.tostring(element, "UTF-8"))
+                if isinstance(new_element, Monitor):
+                    elements.append(new_element)
+                else:
+                    return new_element
+            return elements
+        else:
+            return Monitor.ERROR_TAG_NOT_VALID

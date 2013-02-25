@@ -23,77 +23,166 @@
 __all__ = ['User']
 
 from sqlalchemy import  Column, Integer, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm.exc import NoResultFound
+from xml.etree import ElementTree
 from rasphome.models.Role import Role
 from rasphome.models.Room import Room
-from sqlalchemy.orm.exc import NoResultFound
 
 class User(Role):
+    ERROR_VALUE_NOT_VALID = -2
+    ERROR_ELEMENT_ALREADY_EXISTS = -3
+    ERROR_ELEMENT_NOT_EXISTS = -4
+    ERROR_TAG_NOT_VALID = -5
+    
     __tablename__ = 'user'
     id = Column(Integer, ForeignKey('role.id'), primary_key=True)
     room_id = Column(Integer, ForeignKey('room.id'))
+    room = relationship(Room, foreign_keys=[room_id])
     receive_room_id = Column(Integer, ForeignKey('room.id'))
-    is_admin = Column(Boolean, default=False)
+    receive_room = relationship(Room, foreign_keys=[receive_room_id])
+    admin = Column(Boolean, default=False)
     
     __mapper_args__ = {
         'polymorphic_identity':'user'
     }
     
-    def __init__(self, name, password):
-        super().__init__(name, password)
-    
     def __repr__(self):
         return "<User %s>" % (self.name)
     
     @staticmethod
-    def get_all(session):
-        return session.query(User).all()
+    def export_one(element, attribs):
+        tree = ElementTree.Element("user")
+        tree = Role.export_one(tree, element, attribs)
+        if "room" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "room")
+            if element.room != None:
+                attrib.text = element.room.name
+        if "receive_room" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "receive_room")
+            if element.receive_room != None:
+                attrib.text = element.receive_room.name
+        if "admin" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "admin")
+            if element.admin != None:
+                attrib.text = str(element.admin)
+        return ElementTree.tostring(tree, "UTF-8")
+    
+    @staticmethod
+    def export_all(elements, attribs):
+        tree = ElementTree.Element("users")
+        if len(elements) > 0:
+            for element in elements:
+                tree.append(ElementTree.fromstring(User.export_one(element, attribs)))
+        return ElementTree.tostring(tree, "UTF-8")
+    
+    @staticmethod
+    def get_all(session, room=None):
+        if room == None:
+            return session.query(User).all()
+        else:
+            my_room = Room.get_one(session, room)
+            if isinstance(my_room, Room):
+                return session.query(User).filter(User.room == my_room).all()
+            else:
+                return User.ERROR_VALUE_NOT_VALID
     
     @staticmethod
     def get_one(session, name):
         try:
             return session.query(User).filter(User.name == name).one()
         except NoResultFound:
-            return -1
+            return User.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def add_one(session, name, password):
-        session.add(User(name, password))
-        session.commit()
-    
+    def add_one(session, new_element):
+        element = User.get_one(session, new_element.name)
+        if element == User.ERROR_ELEMENT_NOT_EXISTS:
+            session.add(new_element)
+            return new_element
+        else:
+            return User.ERROR_ELEMENT_ALREADY_EXISTS
+
     @staticmethod
-    def del_one(session, name):
-        try:
-            my_user = session.query(User).filter(User.name == name).one()
-            session.delete(my_user)
-            return 0
-        except NoResultFound:
-            return -1
+    def add_all(session, new_elements):
+        session.add_all(new_elements)
         
     @staticmethod
-    def edit_one(session, name, attrib, value):
-        my_user = User.get_one(session, name)
-        if isinstance(my_user, User):
-            if attrib == "room_id":
-                my_room = Room.get_one(session, value)
-                if isinstance(my_room, Room):
-                    my_user.room_id = my_room
-                    return my_user
-                else:
-                    return -3
-            if attrib == "receive_room_id":
-                my_room = Room.get_one(session, value)
-                if isinstance(my_room, Room):
-                    my_user.receive_room_id = my_room
-                    return my_user
-                else:
-                    return -3
-            elif attrib == "is_admin":
-                if value == "True":
-                    my_user.is_admin = True
-                else:
-                    my_user.is_admin = False
-                return my_user
-            else:
-                return Role.edit_one(session, my_user, attrib, value)
+    def del_one(session, element):
+        element = User.get_one(session, element.name)
+        if isinstance(element):
+            session.delete(element)
+            return element
         else:
-            return -2
+            return User.ERROR_ELEMENT_NOT_EXISTS
+    
+    @staticmethod
+    def delete_all(session):
+        session.query(User).delete()
+        
+    @staticmethod
+    def edit_one(session, element, attrib, value):
+        if attrib == "room":
+            if value == "":
+                element.room = None
+            else:
+                my_room = Room.get_one(session, value)
+                if isinstance(my_room, Room):
+                    element.room = my_room
+                else:
+                    return User.ERROR_VALUE_NOT_VALID
+        elif attrib == "receive_room":
+            if value == "":
+                element.receive_room = None
+            else:
+                my_room = Room.get_one(session, value)
+                if isinstance(my_room, Room):
+                    element.receive_room = my_room
+                else:
+                    return User.ERROR_VALUE_NOT_VALID
+        elif attrib == "admin":
+            if value == "True":
+                element.admin = True
+            else:
+                element.admin = False
+        else:
+            return Role.edit_one(element, attrib, value)
+    
+    @staticmethod
+    def import_one(session, input, element=None, name=None):
+        if element == None:
+            element = User()
+        tree = ElementTree.fromstring(input)
+        if tree.tag == "user":
+            element = Role.import_one(tree, element, name)
+            room = tree.findtext("room")
+            if room != None:
+                element = User.edit_one(session, element, "room", room)
+                if not isinstance(element, User):
+                    return element
+            receive_room = tree.findtext("receive_room")
+            if receive_room != None:
+                element = User.edit_one(session, element, "receive_room", receive_room)
+                if not isinstance(element, User):
+                    return element
+            admin = tree.findtext("admin")
+            if admin != None:
+                User.edit_one(session, element, "admin", admin)
+            return element
+        else:
+            return User.ERROR_TAG_NOT_VALID
+            
+    @staticmethod
+    def import_all(session, input):
+        elements = []
+        tree = ElementTree.fromstring(input)
+        if tree.tag == "users":
+            for element in tree.findall("user"):
+                new_element = User.import_one(session, ElementTree.tostring(element, "UTF-8"))
+                if isinstance(new_element, User):
+                    elements.append(new_element)
+                else:
+                    return new_element
+            return elements
+        else:
+            return User.ERROR_TAG_NOT_VALID

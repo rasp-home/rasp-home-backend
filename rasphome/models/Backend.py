@@ -23,53 +23,119 @@
 __all__ = ['Backend']
 
 from sqlalchemy import  Column, Integer, String, Boolean, ForeignKey
-from rasphome.models.Role import Role
 from sqlalchemy.orm.exc import NoResultFound
+from xml.etree import ElementTree
+from rasphome.models.Role import Role
 
 class Backend(Role):
+    ERROR_ELEMENT_ALREADY_EXISTS = -3
+    ERROR_ELEMENT_NOT_EXISTS = -4
+    ERROR_TAG_NOT_VALID = -5
+    
     __tablename__ = 'backend'
     id = Column(Integer, ForeignKey('role.id'), primary_key=True)
-    master = Column(Boolean)
+    master = Column(Boolean, default=False)
     
     __mapper_args__ = {
         'polymorphic_identity':'backend'
     }
     
-    def __init__(self, name, password):
-        super().__init__(name, password)
-    
     def __repr__(self):
         return "<Backend %s>" % (self.name)
+    
+    @staticmethod
+    def export_one(element, attribs):
+        tree = ElementTree.Element("backend")
+        tree = Role.export_one(tree, element, attribs)
+        if "master" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "master")
+            if element.master != None:
+                attrib.text = str(element.master)
+        return ElementTree.tostring(tree, "UTF-8")
+    
+    @staticmethod
+    def export_all(elements, attribs):
+        tree = ElementTree.Element("backends")
+        if len(elements) > 0:
+            for element in elements:
+                tree.append(ElementTree.fromstring(Backend.export_one(element, attribs)))
+        return ElementTree.tostring(tree, "UTF-8")
 
     @staticmethod
-    def get_all(session):
-        return session.query(Backend).all()
+    def get_all(session, master=None):
+        if master == None:
+            return session.query(Backend).all()
+        else:
+            return session.query(Backend).filter(Backend.master == True).all()
     
     @staticmethod
     def get_one(session, name):
         try:
             return session.query(Backend).filter(Backend.name == name).one()
         except NoResultFound:
-            return -1
+            return Backend.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def add_one(session, name, password):
-        session.add(Backend(name, password))
-        session.commit()
+    def add_one(session, new_element):
+        element = Backend.get_one(session, new_element.name)
+        if element == Backend.ERROR_ELEMENT_NOT_EXISTS:
+            session.add(new_element)
+            return new_element
+        else:
+            return Backend.ERROR_ELEMENT_ALREADY_EXISTS
+
+    @staticmethod
+    def add_all(session, new_elements):
+        session.add_all(new_elements)
     
     @staticmethod
-    def del_one(session, name):
-        try:
-            my_backend = session.query(Backend).filter(Backend.name == name).one()
-            session.delete(my_backend)
-            return 0
-        except NoResultFound:
-            return -1
+    def del_one(session, element):
+        element = Backend.get_one(session, element.name)
+        if isinstance(element):
+            session.delete(element)
+            return element
+        else:
+            return Backend.ERROR_ELEMENT_NOT_EXISTS
+    
+    @staticmethod
+    def delete_all(session):
+        session.query(Backend).delete()
         
     @staticmethod
-    def edit_one(session, name, attrib, value):
-        my_backend = Backend.get_one(session, name)
-        if isinstance(my_backend, Backend):
-            Role.edit_one(session, my_backend, attrib, value)
+    def edit_one(session, element, attrib, value):
+        if attrib == "master":
+            if value == "True":
+                element.master = True
+            else:
+                element.master = False
         else:
-            return -2
+            return Role.edit_one(element, attrib, value)
+
+    @staticmethod
+    def import_one(session, input, element=None, name=None):
+        if element == None:
+            element = Backend()
+        tree = ElementTree.fromstring(input)
+        if tree.tag == "backend":
+            element = Role.import_one(tree, element, name)
+            master = tree.findtext("master")
+            if master != None:
+                Backend.edit_one(session, element, "master", master)
+            return element
+        else:
+            return Backend.ERROR_TAG_NOT_VALID
+                
+    @staticmethod
+    def import_all(session, input):
+        elements = []
+        tree = ElementTree.fromstring(input)
+        if tree.tag == "backends":
+            for element in tree.findall("backend"):
+                new_element = Backend.import_one(session, ElementTree.tostring(element, "UTF-8"))
+                if isinstance(new_element, Backend):
+                    elements.append(new_element)
+                else:
+                    return new_element
+            return elements
+        else:
+            return Backend.ERROR_TAG_NOT_VALID

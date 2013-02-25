@@ -36,34 +36,30 @@ def checkpassword():
             results = session.query(Role).filter(Role.name == user).all()
         except NoResultFound as e:
             return False
-        else:
-            found = False
-            for role in results:
-                if role.check_auth(password):
-                    found = True
-                    cherrypy.request.role = role
-                    return True
-            return found
+        for role in results:
+            if role.check_auth(password) == True:
+                cherrypy.request.role = role
+                return True
+        return False
     
     return checkpassword
 
 def require(roles = None):
     error = False
     role = cherrypy.request.role
-    match_name = cherrypy.request.path_info.split("/")
-    if len(match_name) >= 3:
-        match_name = match_name[2]
-    else:
-        match_name = None
     if roles is not None:
-        if role.__class__.__name__ in roles:
-            if "is_admin" in roles[role.__class__.__name__]:
-                if role.is_admin:
+        if role.type in roles:
+            if "admin" in roles[role.type]:
+                if role.is_admin == False:
                     error = True
-            elif "self" in roles[role.__class__.__name__]:
-                if match_name != None and match_name != role.name:
+            elif "login" in roles[role.type]:
+                if role.login == False:
+                    error = True
+            elif "self" in roles[role.type]:
+                match_name = cherrypy.request.path_info.split("/")
+                if len(match_name) < 3 or role.name != match_name[2]:
                     error = True
     if error:
-        raise cherrypy.HTTPError("403 Forbidden", "You are not allowed to access this resource.") 
+        raise cherrypy.HTTPError("403", "You are not allowed to access this resource.") 
 
 cherrypy.tools.require = Tool('before_handler', require)

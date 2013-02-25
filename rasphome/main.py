@@ -28,27 +28,17 @@ import os.path
         
 def create_user(session, username, password):
     from rasphome.models import User
-    my_user = User(username, password)
-    my_user.isAdmin = True
-    session.add(my_user)
-    try:
-        session.commit()
-    except:
-        session.rollback()      
-          
-def create_node(session, username, password):
-    from rasphome.models import Node
-    my_node = Node(username, password)
-    session.add(my_node)
-    try:
-        session.commit()
-    except:
-        session.rollback()
+    print("Create User %s" % username)
+    my_user = User()
+    User.edit_one(my_user, "name", username)
+    User.edit_one(my_user, "password", password)
+    User.edit_one(my_user, "admin", True)
+    User.add_one(session, my_user)
 
 @rasphome.database.rasp_db_session
 def create_init_db(session):
-    create_user(session, username="admin", password="admin")
-    create_node(session, username="test", password="test")
+    create_user(session, "admin", "admin")
+    session.commit()
 
 def start_rasp_home_backend():
     ## Set up path to db file

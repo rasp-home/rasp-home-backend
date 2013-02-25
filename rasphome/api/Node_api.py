@@ -29,72 +29,100 @@ from rasphome.models.Node import Node
 
 class Node_api(object):
     exposed = True
-    
+
     """
     "curl http://admin:admin@localhost:8090/node
-    "curl http://admin:admin@localhost:8090/node?room=test
+    "curl http://admin:admin@localhost:8090/node?room=room1
+    "curl http://admin:admin@localhost:8090/node/node1
     """
     @cherrypy.tools.require(roles={"Backend":[], "Monitor":[], "User":[]})
-    def GET(self, name = None):
+    def GET(self, name=None, room=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if name == None:
-            msg = "All Nodes: \n"
-            result = Node.get_all(session)
-            for name in result:
-                msg = msg + str(name) + "\n"
-            return msg
+            elements = Node.get_all(session, room)
+            if isinstance(elements, list):
+                return Node.export_all(elements, ["name", "room", "title"])
+            elif elements == Node.ERROR_VALUE_NOT_VALID:
+                raise cherrypy.HTTPError("404", "Value %s of attribute %s not valid" % room, "room")
         else:
-            my_node = Node.get_one(session, name)
-            if isinstance(my_node, Node):
-                return "Node: \n" + str(my_node) + "\n"
-            else:
-                raise cherrypy.HTTPError("404 Node %s not found" % name)
+            element = Node.get_one(session, name)
+            if isinstance(element, Node):
+                return Node.export_one(element, "all")
+            elif elements == Node.ERROR_ELEMENT_NOT_EXISTS:
+                raise cherrypy.HTTPError("404", "Node %s not found" % name)
     
     """
-    " curl -X POST -H "Content-Type: text/plain" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/node
-    """
-    @cherrypy.tools.require(roles={"Backend":[], "Node":["self"], "User":[]})
-    def POST(self):
-        session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        if (cherrypy.request.process_request_body == True):
-            tree = xml.etree.ElementTree.fromstring(cherrypy.request.body.read())
-            name = tree.find("name").text
-            password = tree.find("password").text
-            
-            Node.add_one(session, name, password)
-            return "Node %s added." % (name)
-        else:
-            raise cherrypy.HTTPError("404 No body specified")
-    
-    """
-    "curl -X PUT -H "Content-Type: text/xml" -d "test" http://admin:admin@localhost:8090/node/test/input
+    " curl -X PUT -H "Content-Type: text/xml" -d "<node><password>node1</password><receive_room>test2</receive_room></node>" http://admin:admin@localhost:8090/node/node1
+    " curl -X PUT -H "Content-Type: text/plain" -d "test2" http://admin:admin@localhost:8090/node/node1/room
     """
     @cherrypy.tools.auth_basic(on=False)
-    def PUT(self, name, attrib):
+    def PUT(self, name, attrib=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
+        body = cherrypy.request.body.read().decode()
         if (cherrypy.request.process_request_body == True):
-            my_node = Node.edit_one(session, name, attrib, cherrypy.request.body.read())
-            if isinstance(my_node, Node):
-                return "Node: %s Attrib: %s\nPassword changed" % (name, attrib)
-            elif my_node == -1:
-                raise cherrypy.HTTPError("404 Attribute %s not found" % attrib)
-            elif my_node == -2:
-                raise cherrypy.HTTPError("404 Node %s not found" % name)
+            if attrib == None:
+                element = Node.import_one(session, body, name=name)
+                if isinstance(element, Node):
+                    element = Node.add_one(session, element)
+                    if isinstance(element, Node):
+                        return "Node %s added" % name
+                    elif element == Node.ERROR_ELEMENT_ALREADY_EXISTS:
+                        raise cherrypy.HTTPError("403", "Node %s alread exists" % name)
+                elif element == Node.ERROR_VALUE_NOT_VALID:
+                    raise cherrypy.HTTPError("403", "Value of attribute not valid")
+                elif element == Node.ERROR_TAG_NOT_VALID:
+                    raise cherrypy.HTTPError("400", "Tag not valid")
+            else:
+                element = Node.get_one(session, name)
+                if isinstance(element, Node):
+                    element = Node.edit_one(session, element, attrib, body)
+                    if isinstance(element, Node):
+                        return "Node %s attribute %s value %s changed" % (name, attrib, body)
+                    elif element == Node.ERROR_VALUE_NOT_VALID:
+                        raise cherrypy.HTTPError("403", "Value %s of attribute %s not valid" % (body, attrib))
+                    elif element == Node.ERROR_ATTRIB_NOT_VALID:
+                        raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
+                elif element == Node.ERROR_ELEMENT_NOT_EXISTS:
+                    raise cherrypy.HTTPError("404", "Node %s not found" % name)
         else:
-            raise cherrypy.HTTPError("404 No body specified")
+            raise cherrypy.HTTPError("400", "No body specified")
     
     """
-    "curl -X DELETE http://admin:admin@localhost:8090/node/test
+    "curl -X POST -H "Content-Type: text/xml" -d "<node><room>room2</room><title>Node1</title></user>" http://admin:admin@localhost:8090/node/node1
+    """
+    @cherrypy.tools.require(roles={"Backend":[], "Node":["self"], "User":[]})
+    def POST(self, name):
+        session = cherrypy.request.db
+        cherrypy.response.headers['content-type'] = 'text/plain'
+        body = cherrypy.request.body.read().decode()
+        if (cherrypy.request.process_request_body == True):
+            element = Node.get_one(session, name)
+            if isinstance(element, Node):
+                element = Node.import_one(session, body, element=element)
+                if isinstance(element, Node):
+                    return "Node %s updated" % name
+                elif element == Node.ERROR_VALUE_NOT_VALID:
+                    raise cherrypy.HTTPError("403", "Value of attribute not valid")
+                elif element == Node.ERROR_TAG_NOT_VALID:
+                    raise cherrypy.HTTPError("400", "Tag not valid")
+            elif element == Node.ERROR_ELEMENT_NOT_EXISTS:
+                raise cherrypy.HTTPError("404", "Node %s not found" % name)
+        else:
+            raise cherrypy.HTTPError("400", "No body specified")
+        
+    """
+    "curl -X DELETE http://admin:admin@localhost:8090/node/node1
     """
     @cherrypy.tools.require(roles={"Backend":[], "Node":["self"]})
     def DELETE(self, name):
         session = cherrypy.request.db
-        my_node = Node.del_one(session, name)
-        if my_node == 0:
-            cherrypy.response.headers['content-type'] = 'text/plain'
-            return "Node deleted"
-        else:
-            raise cherrypy.HTTPError("404 Node %s not found" % name)
+        cherrypy.response.headers['content-type'] = 'text/plain'
+        element = Node.get_one(session, name)
+        if isinstance(element, Node):
+            element = Node.del_one(session, element)
+            if isinstance(element, Node):
+                return "Node %s deleted" % name
+        elif element == Node.ERROR_ELEMENT_NOT_EXISTS:
+            raise cherrypy.HTTPError("404", "Node %s not found" % name)

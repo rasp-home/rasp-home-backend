@@ -31,69 +31,89 @@ class Monitor_api(object):
     exposed = True
     
     """
-    "curl http://admin:admin@localhost:8090/monitor/
+    "curl http://admin:admin@localhost:8090/monitor
+    "curl http://admin:admin@localhost:8090/monitor/monitor1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[]})
-    def GET(self, name = None):
+    @cherrypy.tools.require(roles={"Backend":[], "Monitor":["self"]})
+    def GET(self, name=None, room=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if name == None:
-            msg = "All Monitors: \n"
-            result = Monitor.get_all(session)
-            for name in result:
-                msg = msg + str(name) + "\n"
-            return msg
+            elements = Monitor.get_all(session, room)
+            if isinstance(elements, list):
+                return Monitor.export_all(elements, ["name"])
         else:
-            my_monitor = Monitor.get_one(session, name)
-            if isinstance(my_monitor, Monitor):
-                return "Monitor: \n" + str(my_monitor) + "\n"
-            else:
-                raise cherrypy.HTTPError("404 Monitor %s not found" % name)
+            element = Monitor.get_one(session, name)
+            if isinstance(element, Monitor):
+                return Monitor.export_one(element, "all")
+            elif elements == Monitor.ERROR_ELEMENT_NOT_EXISTS:
+                raise cherrypy.HTTPError("404", "Monitor %s not found" % name)
     
     """
-    " curl -X POST -H "Content-Type: text/plain" -d "<user><name>andi</name><password>test</password></user>" http://admin:admin@localhost:8090/monitor
-    """
-    @cherrypy.tools.require(roles={"Backend":[]})
-    def POST(self):
-        session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
-        if (cherrypy.request.process_request_body == True):
-            tree = xml.etree.ElementTree.fromstring(cherrypy.request.body.read())
-            name = tree.find("name").text
-            password = tree.find("password").text
-            
-            Monitor.add_one(session, name, password)
-            return "Monitor %s added." % (name)
-        else:
-            raise cherrypy.HTTPError("404 No body specified")
-    
-    """
-    "curl -X PUT -H "Content-Type: text/xml" -d "test" http://admin:admin@localhost:8090/monitor/test/name
+    " curl -X PUT -H "Content-Type: text/xml" -d "<monitor><password>monitor1</password></monitor>" http://admin:admin@localhost:8090/monitor/monitor1
+    " curl -X PUT -H "Content-Type: text/plain" -d "test123" http://admin:admin@localhost:8090/monitor/monitor1/password
     """
     @cherrypy.tools.auth_basic(on=False)
-    def PUT(self, name, attrib):
+    def PUT(self, name, attrib=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
+        body = cherrypy.request.body.read().decode()
         if (cherrypy.request.process_request_body == True):
-            my_monitor = Monitor.edit_one(session, name, attrib, cherrypy.request.body.read())
-            if isinstance(my_monitor, Monitor):
-                return "Monitor: %s Attrib: %s\nPassword changed" % (name, attrib)
-            elif my_monitor == -1:
-                raise cherrypy.HTTPError("404 Attribute %s not found" % attrib)
-            elif my_monitor == -2:
-                raise cherrypy.HTTPError("404 Monitor %s not found" % name)
+            if attrib == None:
+                element = Monitor.import_one(session, body, name=name)
+                if isinstance(element, Monitor):
+                    element = Monitor.add_one(session, element)
+                    if isinstance(element, Monitor):
+                        return "Monitor %s added" % name
+                    elif element == Monitor.ERROR_ELEMENT_ALREADY_EXISTS:
+                        raise cherrypy.HTTPError("403", "Monitor %s alread exists" % name)
+                elif element == Monitor.ERROR_TAG_NOT_VALID:
+                    raise cherrypy.HTTPError("400", "Tag not valid")
+            else:
+                element = Monitor.get_one(session, name)
+                if isinstance(element, Monitor):
+                    element = Monitor.edit_one(session, element, attrib, body)
+                    if isinstance(element, Monitor):
+                        return "Monitor %s attribute %s value %s changed" % (name, attrib, body)
+                    elif element == Monitor.ERROR_ATTRIB_NOT_VALID:
+                        raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
+                elif element == Monitor.ERROR_ELEMENT_NOT_EXISTS:
+                    raise cherrypy.HTTPError("404", "Monitor %s not found" % name)
         else:
-            raise cherrypy.HTTPError("404 No body specified")
+            raise cherrypy.HTTPError("400", "No body specified")
     
     """
-    "curl -X DELETE http://admin:admin@localhost:8090/monitor/test
+    "curl -X POST -H "Content-Type: text/xml" -d "<monitor><password>monitor1</password></user>" http://admin:admin@localhost:8090/monitor/monitor1
+    """
+    @cherrypy.tools.require(roles={"Backend":[], "Monitor":["self"]})
+    def POST(self, name):
+        session = cherrypy.request.db
+        cherrypy.response.headers['content-type'] = 'text/plain'
+        body = cherrypy.request.body.read().decode()
+        if (cherrypy.request.process_request_body == True):
+            element = Monitor.get_one(session, name)
+            if isinstance(element, Monitor):
+                element = Monitor.import_one(session, body, element=element)
+                if isinstance(element, Monitor):
+                    return "Monitor %s updated" % name
+                elif element == Monitor.ERROR_TAG_NOT_VALID:
+                    raise cherrypy.HTTPError("400", "Tag not valid")
+            elif element == Monitor.ERROR_ELEMENT_NOT_EXISTS:
+                raise cherrypy.HTTPError("404", "Monitor %s not found" % name)
+        else:
+            raise cherrypy.HTTPError("400", "No body specified")
+        
+    """
+    "curl -X DELETE http://admin:admin@localhost:8090/monitor/monitor1
     """
     @cherrypy.tools.require(roles={"Backend":[], "Monitor":["self"]})
     def DELETE(self, name):
         session = cherrypy.request.db
-        my_monitor = Monitor.del_one(session, name)
-        if my_monitor == 0:
-            cherrypy.response.headers['content-type'] = 'text/plain'
-            return "Monitor deleted"
-        else:
-            raise cherrypy.HTTPError("404 Monitor %s not found" % name)
+        cherrypy.response.headers['content-type'] = 'text/plain'
+        element = Monitor.get_one(session, name)
+        if isinstance(element, Monitor):
+            element = Monitor.del_one(session, element)
+            if isinstance(element, Monitor):
+                return "Monitor %s deleted" % name
+        elif element == Monitor.ERROR_ELEMENT_NOT_EXISTS:
+            raise cherrypy.HTTPError("404", "Monitor %s not found" % name)
