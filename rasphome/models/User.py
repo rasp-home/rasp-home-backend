@@ -65,16 +65,25 @@ class User(Role):
         if "admin" in attribs or attribs == "all":
             attrib = ElementTree.SubElement(tree, "admin")
             if element.admin != None:
-                attrib.text = str(element.admin)
+                if element.admin == True:
+                    attrib.text = "True"
+                else:
+                    attrib.text = "False"
         return ElementTree.tostring(tree, "UTF-8")
     
     @staticmethod
     def export_all(elements, attribs):
         tree = ElementTree.Element("users")
-        if len(elements) > 0:
-            for element in elements:
-                tree.append(ElementTree.fromstring(User.export_one(element, attribs)))
+        for element in elements:
+            tree.append(ElementTree.fromstring(User.export_one(element, attribs)))
         return ElementTree.tostring(tree, "UTF-8")
+    
+    @staticmethod
+    def get_one(session, name):
+        try:
+            return session.query(User).filter(User.name == name).one()
+        except NoResultFound:
+            return User.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
     def get_all(session, room=None):
@@ -86,13 +95,6 @@ class User(Role):
                 return session.query(User).filter(User.room == my_room).all()
             else:
                 return User.ERROR_VALUE_NOT_VALID
-    
-    @staticmethod
-    def get_one(session, name):
-        try:
-            return session.query(User).filter(User.name == name).one()
-        except NoResultFound:
-            return User.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
     def add_one(session, new_element):

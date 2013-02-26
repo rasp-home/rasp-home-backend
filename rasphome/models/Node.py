@@ -76,10 +76,16 @@ class Node(Role):
     @staticmethod
     def export_all(elements, attribs):
         tree = ElementTree.Element("nodes")
-        if len(elements) > 0:
-            for element in elements:
-                tree.append(ElementTree.fromstring(Node.export_one(element, attribs)))
+        for element in elements:
+            tree.append(ElementTree.fromstring(Node.export_one(element, attribs)))
         return ElementTree.tostring(tree, "UTF-8")
+    
+    @staticmethod
+    def get_one(session, name):
+        try:
+            return session.query(Node).filter(Node.name == name).one()
+        except NoResultFound:
+            return Node.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
     def get_all(session, room=None):
@@ -91,13 +97,6 @@ class Node(Role):
                 return session.query(Node).filter(Node.room == my_room).all()
             else:
                 return Node.ERROR_VALUE_NOT_VALID
-    
-    @staticmethod
-    def get_one(session, name):
-        try:
-            return session.query(Node).filter(Node.name == name).one()
-        except NoResultFound:
-            return Node.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
     def add_one(session, new_element):

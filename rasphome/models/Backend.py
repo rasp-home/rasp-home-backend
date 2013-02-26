@@ -50,30 +50,32 @@ class Backend(Role):
         if "master" in attribs or attribs == "all":
             attrib = ElementTree.SubElement(tree, "master")
             if element.master != None:
-                attrib.text = str(element.master)
+                if element.master == True:
+                    attrib.text = "True"
+                else:
+                    attrib.te+ = "False"
         return ElementTree.tostring(tree, "UTF-8")
     
     @staticmethod
     def export_all(elements, attribs):
         tree = ElementTree.Element("backends")
-        if len(elements) > 0:
-            for element in elements:
-                tree.append(ElementTree.fromstring(Backend.export_one(element, attribs)))
+        for element in elements:
+            tree.append(ElementTree.fromstring(Backend.export_one(element, attribs)))
         return ElementTree.tostring(tree, "UTF-8")
 
-    @staticmethod
-    def get_all(session, master=None):
-        if master == None:
-            return session.query(Backend).all()
-        else:
-            return session.query(Backend).filter(Backend.master == True).all()
-    
     @staticmethod
     def get_one(session, name):
         try:
             return session.query(Backend).filter(Backend.name == name).one()
         except NoResultFound:
             return Backend.ERROR_ELEMENT_NOT_EXISTS
+        
+    @staticmethod
+    def get_all(session, master=None):
+        if master == None:
+            return session.query(Backend).all()
+        else:
+            return session.query(Backend).filter(Backend.master == True).all()
     
     @staticmethod
     def add_one(session, new_element):

@@ -51,14 +51,9 @@ class Room(Base):
     @staticmethod
     def export_all(elements, attribs):
         tree = ElementTree.Element("rooms")
-        if len(elements) > 0:
-            for element in elements:
-                tree.append(ElementTree.fromstring(Room.export_one(element, attribs)))
+        for element in elements:
+            tree.append(ElementTree.fromstring(Room.export_one(element, attribs)))
         return ElementTree.tostring(tree, "UTF-8")
-    
-    @staticmethod
-    def get_all(session):
-        return session.query(Room).all()
     
     @staticmethod
     def get_one(session, name):
@@ -66,6 +61,10 @@ class Room(Base):
             return session.query(Room).filter(Room.name == name).one()
         except NoResultFound:
             return Room.ERROR_ELEMENT_NOT_EXISTS
+    
+    @staticmethod
+    def get_all(session):
+        return session.query(Room).all()
     
     @staticmethod
     def add_one(session, new_element):
@@ -107,6 +106,8 @@ class Room(Base):
             element = Room()
         tree = ElementTree.fromstring(input)
         if tree.tag == "room":
+            if name == None:
+                name = tree.findtext("name")
             if name != None:
                 Room.edit_one(element, "name", name)
             return element

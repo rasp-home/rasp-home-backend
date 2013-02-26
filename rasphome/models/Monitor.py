@@ -51,14 +51,9 @@ class Monitor(Role):
     @staticmethod
     def export_all(elements, attribs):
         tree = ElementTree.Element("monitors")
-        if len(elements) > 0:
-            for element in elements:
-                tree.append(ElementTree.fromstring(Monitor.export_one(element, attribs)))
+        for element in elements:
+            tree.append(ElementTree.fromstring(Monitor.export_one(element, attribs)))
         return ElementTree.tostring(tree, "UTF-8")
-    
-    @staticmethod
-    def get_all(session):
-        return session.query(Monitor).all()
     
     @staticmethod
     def get_one(session, name):
@@ -66,6 +61,10 @@ class Monitor(Role):
             return session.query(Monitor).filter(Monitor.name == name).one()
         except NoResultFound:
             return Monitor.ERROR_ELEMENT_NOT_EXISTS
+    
+    @staticmethod
+    def get_all(session):
+        return session.query(Monitor).all()
     
     @staticmethod
     def add_one(session, new_element):

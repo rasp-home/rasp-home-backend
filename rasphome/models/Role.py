@@ -70,7 +70,10 @@ class Role(Base):
         if "login" in attribs or attribs == "all":
             attrib = ElementTree.SubElement(tree, "login")
             if element.login != None:
-                attrib.text = str(element.login)
+                if element.login == True:
+                    attrib.text = "True"
+                else:
+                    attrib.text = "False"
         if "backend_pass" in attribs or attribs == "all":
             attrib = ElementTree.SubElement(tree, "backend_pass")
             attrib.text = element.backend_pass
@@ -81,7 +84,7 @@ class Role(Base):
             attrib = ElementTree.SubElement(tree, "serverport")
             if element.serverport != None:
                 attrib.text = str(element.serverport)
-        if "serverport" in attribs or attribs == "all":
+        if "zeroconfport" in attribs or attribs == "all":
             attrib = ElementTree.SubElement(tree, "zeroconfport")
             if element.zeroconfport != None:
                 attrib.text = str(element.zeroconfport)
@@ -120,6 +123,8 @@ class Role(Base):
         id = tree.findtext("id")
         if id != None:
             Role.edit_one(element, "id", id)
+        if name == None:
+            name = tree.findtext("name")
         if name != None:
             Role.edit_one(element, "name", name)
         password = tree.findtext("password")
