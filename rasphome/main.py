@@ -32,9 +32,9 @@ def create_user(session, username, password):
     from rasphome.models import User
     print("Create User %s" % username)
     my_user = User()
-    User.edit_one(my_user, "name", username)
-    User.edit_one(my_user, "password", password)
-    User.edit_one(my_user, "admin", True)
+    User.edit_one(session, my_user, "name", username)
+    User.edit_one(session, my_user, "password", password)
+    User.edit_one(session, my_user, "admin", True)
     User.add_one(session, my_user)
 
 @rasphome.database.rasp_db_session

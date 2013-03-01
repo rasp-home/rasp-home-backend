@@ -36,6 +36,7 @@ class Role(Base):
     name = Column(String(50), unique=True)
     password = Column(String(128))
     login = Column(Boolean, default=False)
+    backend_name = Column(String(50))
     backend_pass = Column(String(50))
     ip = Column(String(50))
     serverport = Column(Integer)
@@ -74,6 +75,9 @@ class Role(Base):
                     attrib.text = "True"
                 else:
                     attrib.text = "False"
+        if "backend_name" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "backend_name")
+            attrib.text = element.backend_name
         if "backend_pass" in attribs or attribs == "all":
             attrib = ElementTree.SubElement(tree, "backend_pass")
             attrib.text = element.backend_pass
@@ -106,6 +110,8 @@ class Role(Base):
                 element.login = True
             else:
                 element.login = False
+        elif attrib == "backend_name":
+            element.backend_name = value
         elif attrib == "backend_pass":
             element.backend_pass = value
         elif attrib == "ip":
@@ -133,6 +139,9 @@ class Role(Base):
         login = tree.findtext("login")
         if login != None:
             Role.edit_one(element, "login", login)
+        backend_name = tree.findtext("backend_name")
+        if backend_name != None:
+            Role.edit_one(element, "backend_name", backend_name)
         backend_pass = tree.findtext("backend_pass")
         if backend_pass != None:
             Role.edit_one(element, "backend_pass", backend_pass)

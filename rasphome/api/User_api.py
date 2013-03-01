@@ -34,12 +34,17 @@ class User_api(object):
     "curl http://admin:admin@localhost:8090/user?room=room1
     "curl http://admin:admin@localhost:8090/user/admin
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[], "User":["admin"]})
-    def GET(self, name=None, room=None):
+    @cherrypy.tools.require(roles={"backend":[], "monitor":[], "user":["admin"]})
+    def GET(self, name=None, room=None, receive_room=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if name == None:
-            elements = User.get_all(session, room)
+            if room != None:
+                elements = User.get_all(session, "room", room)
+            elif receive_room != None:
+                elements = User.get_all(session, "receive_room", receive_room)
+            else:
+                elements = User.get_all(session)
             if isinstance(elements, list):
                 return User.export_all(elements, ["name", "room", "receive_room"])
             elif elements == User.ERROR_VALUE_NOT_VALID:
@@ -56,7 +61,7 @@ class User_api(object):
     " curl -X PUT -H "Content-Type: text/plain" -d "user1" http://admin:admin@localhost:8090/user/user1/password
     " curl -X PUT -H "Content-Type: text/plain" -d "room1" http://admin:admin@localhost:8090/user/user1/room
     """
-    @cherrypy.tools.require(roles={"Backend":[], "User":["admin", "self"]})
+    @cherrypy.tools.require(roles={"backend":[], "user":["admin", "self"]})
     def PUT(self, name, attrib=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -93,7 +98,7 @@ class User_api(object):
     "curl -X POST -H "Content-Type: text/xml" -d "<user><login>False</login><serverport>8000</serverport></user>" http://admin:admin@localhost:8090/user/user1
     "curl -X POST -H "Content-Type: text/xml" -d "<user><room>room1</room><receive_room>room2</receive_room></user>" http://admin:admin@localhost:8090/user/user1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "User":["admin"]})
+    @cherrypy.tools.require(roles={"backend":[], "user":["admin"]})
     def POST(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'

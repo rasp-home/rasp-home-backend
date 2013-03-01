@@ -35,7 +35,7 @@ class Node_api(object):
     "curl http://admin:admin@localhost:8090/node?room=room1
     "curl http://admin:admin@localhost:8090/node/node1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[], "User":[]})
+    @cherrypy.tools.require(roles={"backend":[], "monitor":[], "user":[]})
     def GET(self, name=None, room=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -56,7 +56,8 @@ class Node_api(object):
     " curl -X PUT -H "Content-Type: text/xml" -d "<node><password>node1</password><receive_room>test2</receive_room></node>" http://admin:admin@localhost:8090/node/node1
     " curl -X PUT -H "Content-Type: text/plain" -d "test2" http://admin:admin@localhost:8090/node/node1/room
     """
-    @cherrypy.tools.auth_basic(on=False)
+    @cherrypy.tools.auth_basic(checkpassword=authorization.checkpassword("node", "node"))
+    @cherrypy.tools.require(roles={"backend":[], "node":["self"]})
     def PUT(self, name, attrib=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -75,24 +76,27 @@ class Node_api(object):
                 elif element == Node.ERROR_TAG_NOT_VALID:
                     raise cherrypy.HTTPError("400", "Tag not valid")
             else:
-                element = Node.get_one(session, name)
-                if isinstance(element, Node):
-                    element = Node.edit_one(session, element, attrib, body)
+                if not isinstance(cherrypy.request.role, str):
+                    element = Node.get_one(session, name)
                     if isinstance(element, Node):
-                        return "Node %s attribute %s value %s changed" % (name, attrib, body)
-                    elif element == Node.ERROR_VALUE_NOT_VALID:
-                        raise cherrypy.HTTPError("403", "Value %s of attribute %s not valid" % (body, attrib))
-                    elif element == Node.ERROR_ATTRIB_NOT_VALID:
-                        raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
-                elif element == Node.ERROR_ELEMENT_NOT_EXISTS:
-                    raise cherrypy.HTTPError("404", "Node %s not found" % name)
+                        element = Node.edit_one(session, element, attrib, body)
+                        if isinstance(element, Node):
+                            return "Node %s attribute %s value %s changed" % (name, attrib, body)
+                        elif element == Node.ERROR_VALUE_NOT_VALID:
+                            raise cherrypy.HTTPError("403", "Value %s of attribute %s not valid" % (body, attrib))
+                        elif element == Node.ERROR_ATTRIB_NOT_VALID:
+                            raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
+                    elif element == Node.ERROR_ELEMENT_NOT_EXISTS:
+                        raise cherrypy.HTTPError("404", "Node %s not found" % name)
+                else:
+                    raise cherrypy.HTTPError("401", "You are not allowed to access this resource.")
         else:
             raise cherrypy.HTTPError("400", "No body specified")
     
     """
     "curl -X POST -H "Content-Type: text/xml" -d "<node><room>room2</room><title>Node1</title></user>" http://admin:admin@localhost:8090/node/node1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Node":["self"], "User":[]})
+    @cherrypy.tools.require(roles={"backend":[], "node":["self"], "user":[]})
     def POST(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -115,7 +119,7 @@ class Node_api(object):
     """
     "curl -X DELETE http://admin:admin@localhost:8090/node/node1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Node":["self"]})
+    @cherrypy.tools.require(roles={"backend":[], "node":["self"]})
     def DELETE(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'

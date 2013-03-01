@@ -34,12 +34,12 @@ class Backend_api(object):
     "curl http://admin:admin@localhost:8090/backend/
     "curl http://admin:admin@localhost:8090/backend?master=true
     """
-    @cherrypy.tools.require(roles={"Backend":[]})
+    @cherrypy.tools.require(roles={"backend":[]})
     def GET(self, name=None, master=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
         if name == None:
-            elements = Backend.get_all(session, master)
+            elements = Backend.get_all(session, "master", master)
             if isinstance(elements, list):
                 return Backend.export_all(elements, ["all"])
         else:
@@ -51,9 +51,10 @@ class Backend_api(object):
     
     """
     " curl -X PUT -H "Content-Type: text/xml" -d "<backend><password>backend1</password><master>True</master></backend>" http://admin:admin@localhost:8090/backend/backend1
-    " curl -X PUT -H "Content-Type: text/plain" -d "False" http://admin:admin@localhost:8090/backend1/master
+    " curl -X PUT -H "Content-Type: text/plain" -d "False" http://admin:admin@localhost:8090/backend/backend1/master
     """
-    @cherrypy.tools.auth_basic(on=False)
+    @cherrypy.tools.auth_basic(checkpassword=authorization.checkpassword("backend", "backend"))
+    @cherrypy.tools.require(roles={"backend":[]})
     def PUT(self, name, attrib=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -70,22 +71,25 @@ class Backend_api(object):
                 elif element == Backend.ERROR_TAG_NOT_VALID:
                     raise cherrypy.HTTPError("400", "Tag not valid")
             else:
-                element = Backend.get_one(session, name)
-                if isinstance(element, Backend):
-                    element = Backend.edit_one(session, element, attrib, body)
+                if not isinstance(cherrypy.request.role, str):
+                    element = Backend.get_one(session, name)
                     if isinstance(element, Backend):
-                        return "Backend %s attribute %s value %s changed" % (name, attrib, body)
-                    elif element == Backend.ERROR_ATTRIB_NOT_VALID:
-                        raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
-                elif element == Backend.ERROR_ELEMENT_NOT_EXISTS:
-                    raise cherrypy.HTTPError("404", "Backend %s not found" % name)
+                        element = Backend.edit_one(session, element, attrib, body)
+                        if isinstance(element, Backend):
+                            return "Backend %s attribute %s value %s changed" % (name, attrib, body)
+                        elif element == Backend.ERROR_ATTRIB_NOT_VALID:
+                            raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
+                    elif element == Backend.ERROR_ELEMENT_NOT_EXISTS:
+                        raise cherrypy.HTTPError("404", "Backend %s not found" % name)
+                else:
+                    raise cherrypy.HTTPError("401", "You are not allowed to access this resource.")
         else:
             raise cherrypy.HTTPError("400", "No body specified")
     
     """
     "curl -X POST -H "Content-Type: text/xml" -d "<backend><master>True</master></backend>" http://admin:admin@localhost:8090/backend/backend1
     """
-    @cherrypy.tools.require(roles={"Backend":[]})
+    @cherrypy.tools.require(roles={"backend":[]})
     def POST(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -106,7 +110,7 @@ class Backend_api(object):
     """
     "curl -X DELETE http://admin:admin@localhost:8090/backend/backend1
     """
-    @cherrypy.tools.require(roles={"Backend":[]})
+    @cherrypy.tools.require(roles={"backend":[]})
     def DELETE(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'

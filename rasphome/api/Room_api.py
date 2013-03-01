@@ -33,7 +33,7 @@ class Room_api(object):
     "curl http://admin:admin@localhost:8090/room
     "curl http://admin:admin@localhost:8090/room/test1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Monitor":[], "User":[]})
+    @cherrypy.tools.require(roles={"backend":[], "monitor":[], "user":[]})
     def GET(self, name=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -50,9 +50,9 @@ class Room_api(object):
     
     """
     " curl -X PUT -H "Content-Type: text/xml" -d "<room></room>" http://admin:admin@localhost:8090/room/test1
-    " curl -X PUT -H "Content-Type: text/plain" -d "test2" http://admin:admin@localhost:8090/room/name
+    " curl -X PUT -H "Content-Type: text/plain" -d "test2" http://admin:admin@localhost:8090/room/room1/name
     """
-    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin"]})
+    @cherrypy.tools.require(roles={"backend":[], "user":["admin"]})
     def PUT(self, name, attrib=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -84,7 +84,7 @@ class Room_api(object):
     """
     "curl -X POST -H "Content-Type: text/xml" -d "<room><name>test2</name></room>" http://admin:admin@localhost:8090/room/test1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin"]})
+    @cherrypy.tools.require(roles={"backend":[], "user":["admin"]})
     def POST(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -105,7 +105,7 @@ class Room_api(object):
     """
     "curl -X DELETE http://admin:admin@localhost:8090/room/test1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "User":["is_admin"]})
+    @cherrypy.tools.require(roles={"backend":[], "user":["admin"]})
     def DELETE(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'

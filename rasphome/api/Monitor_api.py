@@ -34,7 +34,7 @@ class Monitor_api(object):
     "curl http://admin:admin@localhost:8090/monitor
     "curl http://admin:admin@localhost:8090/monitor/monitor1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Monitor":["self"]})
+    @cherrypy.tools.require(roles={"backend":[], "monitor":["self"]})
     def GET(self, name=None, room=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -53,7 +53,8 @@ class Monitor_api(object):
     " curl -X PUT -H "Content-Type: text/xml" -d "<monitor><password>monitor1</password></monitor>" http://admin:admin@localhost:8090/monitor/monitor1
     " curl -X PUT -H "Content-Type: text/plain" -d "test123" http://admin:admin@localhost:8090/monitor/monitor1/password
     """
-    @cherrypy.tools.auth_basic(on=False)
+    @cherrypy.tools.auth_basic(checkpassword=authorization.checkpassword("monitor", "monitor"))
+    @cherrypy.tools.require(roles={"backend":[], "monitor":["self"]})
     def PUT(self, name, attrib=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -70,22 +71,25 @@ class Monitor_api(object):
                 elif element == Monitor.ERROR_TAG_NOT_VALID:
                     raise cherrypy.HTTPError("400", "Tag not valid")
             else:
-                element = Monitor.get_one(session, name)
-                if isinstance(element, Monitor):
-                    element = Monitor.edit_one(session, element, attrib, body)
+                if not isinstance(cherrypy.request.role, str):
+                    element = Monitor.get_one(session, name)
                     if isinstance(element, Monitor):
-                        return "Monitor %s attribute %s value %s changed" % (name, attrib, body)
-                    elif element == Monitor.ERROR_ATTRIB_NOT_VALID:
-                        raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
-                elif element == Monitor.ERROR_ELEMENT_NOT_EXISTS:
-                    raise cherrypy.HTTPError("404", "Monitor %s not found" % name)
+                        element = Monitor.edit_one(session, element, attrib, body)
+                        if isinstance(element, Monitor):
+                            return "Monitor %s attribute %s value %s changed" % (name, attrib, body)
+                        elif element == Monitor.ERROR_ATTRIB_NOT_VALID:
+                            raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
+                    elif element == Monitor.ERROR_ELEMENT_NOT_EXISTS:
+                        raise cherrypy.HTTPError("404", "Monitor %s not found" % name)
+                else:
+                    raise cherrypy.HTTPError("401", "You are not allowed to access this resource.")
         else:
             raise cherrypy.HTTPError("400", "No body specified")
     
     """
     "curl -X POST -H "Content-Type: text/xml" -d "<monitor><password>monitor1</password></user>" http://admin:admin@localhost:8090/monitor/monitor1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Monitor":["self"]})
+    @cherrypy.tools.require(roles={"backend":[], "monitor":["self"]})
     def POST(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -106,7 +110,7 @@ class Monitor_api(object):
     """
     "curl -X DELETE http://admin:admin@localhost:8090/monitor/monitor1
     """
-    @cherrypy.tools.require(roles={"Backend":[], "Monitor":["self"]})
+    @cherrypy.tools.require(roles={"backend":[], "monitor":["self"]})
     def DELETE(self, name):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'

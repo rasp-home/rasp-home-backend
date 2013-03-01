@@ -86,15 +86,23 @@ class User(Role):
             return User.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def get_all(session, room=None):
-        if room == None:
+    def get_all(session, attrib=None, value=None):
+        if attrib == None:
             return session.query(User).all()
-        else:
-            my_room = Room.get_one(session, room)
+        elif attrib == "room":
+            my_room = Room.get_one(session, value)
             if isinstance(my_room, Room):
                 return session.query(User).filter(User.room == my_room).all()
             else:
                 return User.ERROR_VALUE_NOT_VALID
+        elif attrib == "receiveroom":
+            my_room = Room.get_one(session, value)
+            if isinstance(my_room, Room):
+                return session.query(User).filter(User.receive_room == my_room).all()
+            else:
+                return User.ERROR_VALUE_NOT_VALID
+        else:
+            return User.ERROR_ATTRIB_NOT_VALID
     
     @staticmethod
     def add_one(session, new_element):

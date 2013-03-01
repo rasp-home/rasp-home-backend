@@ -53,7 +53,7 @@ class Backend(Role):
                 if element.master == True:
                     attrib.text = "True"
                 else:
-                    attrib.te+ = "False"
+                    attrib.text = "False"
         return ElementTree.tostring(tree, "UTF-8")
     
     @staticmethod
@@ -71,12 +71,17 @@ class Backend(Role):
             return Backend.ERROR_ELEMENT_NOT_EXISTS
         
     @staticmethod
-    def get_all(session, master=None):
-        if master == None:
+    def get_all(session, attrib=None, value=None):
+        if attrib == None:
             return session.query(Backend).all()
+        elif attrib == "master":
+            if value == "True":
+                return session.query(Backend).filter(Backend.master == True).all()
+            else:
+                return session.query(Backend).filter(Backend.master == False).all()
         else:
-            return session.query(Backend).filter(Backend.master == True).all()
-    
+            return Backend.ERROR_ATTRIB_NOT_VALID
+            
     @staticmethod
     def add_one(session, new_element):
         element = Backend.get_one(session, new_element.name)

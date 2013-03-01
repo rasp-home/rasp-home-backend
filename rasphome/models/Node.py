@@ -88,15 +88,17 @@ class Node(Role):
             return Node.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def get_all(session, room=None):
-        if room == None:
+    def get_all(session, attrib=None, value=None):
+        if attrib == None:
             return session.query(Node).all()
-        else:
-            my_room = Room.get_one(session, room)
+        elif attrib == "room":
+            my_room = Room.get_one(session, value)
             if isinstance(my_room, Room):
                 return session.query(Node).filter(Node.room == my_room).all()
             else:
                 return Node.ERROR_VALUE_NOT_VALID
+        else:
+            return Node.ERROR_ATTRIB_NOT_VALID
     
     @staticmethod
     def add_one(session, new_element):

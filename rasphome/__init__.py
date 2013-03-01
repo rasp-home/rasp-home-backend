@@ -25,6 +25,6 @@ import rasphome.models
 import rasphome.api
 import rasphome.authorization
 import rasphome.database
-
+import rasphome.client_com
 
 from rasphome.main import start_rasp_home_backend
