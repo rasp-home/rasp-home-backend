@@ -35,7 +35,7 @@ class Role(Base):
     type = Column(String(50))
     name = Column(String(50), unique=True)
     password = Column(String(128))
-    login = Column(Boolean, default=False)
+    active = Column(Boolean, default=False)
     backend_name = Column(String(50))
     backend_pass = Column(String(50))
     ip = Column(String(50))
@@ -68,10 +68,10 @@ class Role(Base):
         if "password" in attribs or attribs == "all":
             attrib = ElementTree.SubElement(tree, "password")
             attrib.text = element.password
-        if "login" in attribs or attribs == "all":
-            attrib = ElementTree.SubElement(tree, "login")
-            if element.login != None:
-                if element.login == True:
+        if "active" in attribs or attribs == "all":
+            attrib = ElementTree.SubElement(tree, "active")
+            if element.active != None:
+                if element.active == True:
                     attrib.text = "True"
                 else:
                     attrib.text = "False"
@@ -105,11 +105,11 @@ class Role(Base):
                 element.password = value
             else:
                 element.password = Role.get_hashed_password(value)
-        elif attrib == "login":
+        elif attrib == "active":
             if value == "True":
-                element.login = True
+                element.active = True
             else:
-                element.login = False
+                element.active = False
         elif attrib == "backend_name":
             element.backend_name = value
         elif attrib == "backend_pass":
@@ -136,9 +136,9 @@ class Role(Base):
         password = tree.findtext("password")
         if password != None:
             Role.edit_one(element, "password", password)
-        login = tree.findtext("login")
-        if login != None:
-            Role.edit_one(element, "login", login)
+        active = tree.findtext("active")
+        if active != None:
+            Role.edit_one(element, "active", active)
         backend_name = tree.findtext("backend_name")
         if backend_name != None:
             Role.edit_one(element, "backend_name", backend_name)

@@ -32,6 +32,8 @@ from rasphome.models import Backend
 from rasphome.models import Monitor
 from rasphome.models import User
 
+#TODO: Use process not thread and create new session of database
+#@rasp_db_session def send_request(session, ...)
 #TODO: Complete function with error handling
 def send_request(role, method, type, value, value_type, name=None, attrib=None):
     uri = "/" + type

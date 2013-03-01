@@ -59,9 +59,6 @@ def require(roles=None):
                 if "admin" in roles[role.type]:
                     if role.admin == False:
                         error = True
-                elif "login" in roles[role.type]:
-                    if role.login == False:
-                        error = True
                 elif "self" in roles[role.type]:
                     match_name = cherrypy.request.path_info.split("/")
                     if len(match_name) < 3 or role.name != match_name[2]:
