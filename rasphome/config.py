@@ -79,4 +79,5 @@ class ConfigSection(object):
 rasp_settings = ConfigSection(config, "rasp-home")
 rasp_settings.addIntOption("http_port", 8090)
 rasp_settings.addIntOption("https_port", 8091)
+rasp_settings.addOption("db_file", "rasp-home.db")
 
