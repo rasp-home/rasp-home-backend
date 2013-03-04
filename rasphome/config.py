@@ -51,7 +51,7 @@ class ConfigSection(object):
     def addOption(self, option, defaultValue):
         assert isinstance(defaultValue, str)
         try:
-            setVal = str(self._getOption(option, defaultValue))
+            setVal = str(self.__getOption(option, defaultValue))
         except ValueError:
             setVal = defaultValue
 
