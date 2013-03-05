@@ -47,21 +47,6 @@ class User(Role):
         'polymorphic_identity':'user'
     }
     
-    def __repr__(self):
-        return "%d %s %s %s %s, %s, %s, %s, %d, %d %s %s %s" % (self.id, 
-                              self.role, 
-                              self.name, 
-                              self.password, 
-                              self.active, 
-                              self.backend_name, 
-                              self.backend_pass, 
-                              self.ip, 
-                              self.serverport, 
-                              self.zeroconfport,
-                              self.room.name if self.room != None else "",
-                              self.receive_room.name if self.receive_room != None else "",
-                              self.admin)
-    
     @staticmethod
     def export_one(element, attribs):
         tree = ElementTree.Element("user")

@@ -38,18 +38,6 @@ class Monitor(Role):
     __mapper_args__ = {
         'polymorphic_identity':'monitor'
     }
-    
-    def __repr__(self):
-        return "%d %s %s %s %s, %s, %s, %s, %d, %d" % (self.id, 
-                              self.role, 
-                              self.name, 
-                              self.password, 
-                              self.active, 
-                              self.backend_name, 
-                              self.backend_pass, 
-                              self.ip, 
-                              self.serverport, 
-                              self.zeroconfport)
 
     @staticmethod
     def export_one(element, attribs):

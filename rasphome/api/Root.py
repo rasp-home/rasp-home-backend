@@ -39,20 +39,21 @@ class Root(object):
         msg = "Backends:\n"
         backends = Backend.get_all(session)
         for backend in backends:
-            msg += str(backend) + "\n"
+            msg += Backend.export_one(backend, "all").decode() + "\n"
         msg += "Monitors:\n"
         monitors = Monitor.get_all(session)
         for monitor in monitors:
-            msg += str(monitor) + "\n"
+            msg += Monitor.export_one(monitor, "all").decode() + "\n"
         msg += "Nodes:\n"
         nodes = Node.get_all(session)
         for node in nodes:
-            msg += str(node) + "\n"
+            msg += Node.export_one(node, "all").decode() + "\n"
         msg += "Rooms:\n"
         rooms = Room.get_all(session)
         for room in rooms:
-            msg += str(room) + "\n"
+            msg += Room.export_one(room, "all").decode() + "\n"
         msg += "Users:\n"
         users = User.get_all(session)
         for user in users:
-            msg += str(user) + "\n"
+            msg += User.export_one(user, "all").decode() + "\n"
+        return msg

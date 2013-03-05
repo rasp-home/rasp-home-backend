@@ -46,18 +46,6 @@ class Role(Base):
         'polymorphic_identity':'role',
         'polymorphic_on':role
     }
-        
-    def __repr__(self):
-        return "%d %s %s %s %s, %s, %s, %s, %d, %d" % (self.id, 
-                              self.role, 
-                              self.name, 
-                              self.password, 
-                              self.active, 
-                              self.backend_name, 
-                              self.backend_pass, 
-                              self.ip, 
-                              self.serverport, 
-                              self.zeroconfport)
     
     def check_auth(self, password):
         return sha512_crypt.verify(password, self.password)

@@ -40,19 +40,6 @@ class Backend(Role):
         'polymorphic_identity':'backend'
     }
     
-    def __repr__(self):
-        return "%d %s %s %s %s, %s, %s, %s, %d, %d %s" % (self.id, 
-                              self.role, 
-                              self.name, 
-                              self.password, 
-                              self.active, 
-                              self.backend_name, 
-                              self.backend_pass, 
-                              self.ip, 
-                              self.serverport, 
-                              self.zeroconfport,
-                              self.master)
-    
     @staticmethod
     def export_one(element, attribs):
         tree = ElementTree.Element("backend")

@@ -48,23 +48,6 @@ class Node(Role):
         'polymorphic_identity':'node'
     }
     
-    def __repr__(self):
-        return "%d %s %s %s %s, %s, %s, %s, %d, %d %s %s %s %s %s" % (self.id, 
-                              self.role, 
-                              self.name, 
-                              self.password, 
-                              self.active, 
-                              self.backend_name, 
-                              self.backend_pass, 
-                              self.ip, 
-                              self.serverport, 
-                              self.zeroconfport,
-                              self.room.name if self.room != None else "",
-                              self.title,
-                              self.type,
-                              self.input,
-                              self.output)
-    
     @staticmethod
     def export_one(element, attribs):
         tree = ElementTree.Element("node")
