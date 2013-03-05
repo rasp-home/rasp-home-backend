@@ -48,7 +48,19 @@ class User(Role):
     }
     
     def __repr__(self):
-        return "<User %s>" % (self.name)
+        return "%d %s %s %s %s, %s, %s, %s, %d, %d %s %s %s" % (self.id, 
+                              self.role, 
+                              self.name, 
+                              self.password, 
+                              self.active, 
+                              self.backend_name, 
+                              self.backend_pass, 
+                              self.ip, 
+                              self.serverport, 
+                              self.zeroconfport,
+                              self.room.name,
+                              self.receive_room.name,
+                              self.admin)
     
     @staticmethod
     def export_one(element, attribs):
@@ -89,6 +101,8 @@ class User(Role):
     def get_all(session, attrib=None, value=None):
         if attrib == None:
             return session.query(User).all()
+        elif attrib == "login":
+            return session.query(User).filter(User.login == True).all()
         elif attrib == "room":
             my_room = Room.get_one(session, value)
             if isinstance(my_room, Room):

@@ -41,7 +41,17 @@ class Backend(Role):
     }
     
     def __repr__(self):
-        return "<Backend %s>" % (self.name)
+        return "%d %s %s %s %s, %s, %s, %s, %d, %d %s" % (self.id, 
+                              self.role, 
+                              self.name, 
+                              self.password, 
+                              self.active, 
+                              self.backend_name, 
+                              self.backend_pass, 
+                              self.ip, 
+                              self.serverport, 
+                              self.zeroconfport,
+                              self.master)
     
     @staticmethod
     def export_one(element, attribs):
@@ -74,6 +84,8 @@ class Backend(Role):
     def get_all(session, attrib=None, value=None):
         if attrib == None:
             return session.query(Backend).all()
+        elif attrib == "login":
+            return session.query(Backend).filter(Backend.login == True).all()
         elif attrib == "master":
             if value == "True":
                 return session.query(Backend).filter(Backend.master == True).all()

@@ -31,7 +31,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from rasphome.models.Role import Role
 from rasphome.models.Backend import Backend
 
-def checkpassword(type=None, type_password=None):
+def checkpassword(role=None, role_password=None):
     def checkpassword(realm, username, password):
         session = cherrypy.request.db
         try:
@@ -41,8 +41,8 @@ def checkpassword(type=None, type_password=None):
                 return True
         except NoResultFound:
             pass
-        if type != None and type_password != None and type == username and type_password == password:
-            cherrypy.request.role = type
+        if role != None and role_password != None and role == username and role_password == password:
+            cherrypy.request.role = role
             return True
         return False
     
@@ -53,13 +53,13 @@ def require(roles=None):
     role = cherrypy.request.role
     if roles != None:
         if isinstance(role, Role):
-            if role.type not in roles:
+            if role.role not in roles:
                 error = True
             else:
-                if "admin" in roles[role.type]:
+                if "admin" in roles[role.role]:
                     if role.admin == False:
                         error = True
-                elif "self" in roles[role.type]:
+                elif "self" in roles[role.role]:
                     match_name = cherrypy.request.path_info.split("/")
                     if len(match_name) < 3 or role.name != match_name[2]:
                         error = True

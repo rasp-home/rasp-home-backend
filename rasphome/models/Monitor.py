@@ -40,7 +40,16 @@ class Monitor(Role):
     }
     
     def __repr__(self):
-        return "<Monitor %s>" % (self.name)
+        return "%d %s %s %s %s, %s, %s, %s, %d, %d" % (self.id, 
+                              self.role, 
+                              self.name, 
+                              self.password, 
+                              self.active, 
+                              self.backend_name, 
+                              self.backend_pass, 
+                              self.ip, 
+                              self.serverport, 
+                              self.zeroconfport)
 
     @staticmethod
     def export_one(element, attribs):
@@ -63,8 +72,11 @@ class Monitor(Role):
             return Monitor.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def get_all(session):
-        return session.query(Monitor).all()
+    def get_all(session, attrib=None, value=None):
+        if attrib == None:
+            return session.query(Monitor).all()
+        elif attrib == "login":
+            return session.query(Monitor).filter(Monitor.login == True).all()
     
     @staticmethod
     def add_one(session, new_element):

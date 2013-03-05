@@ -24,14 +24,36 @@ __all__=['Root']
 
 import cherrypy
 import rasphome.database
+from rasphome.models import Backend
+from rasphome.models import Monitor
+from rasphome.models import Node
+from rasphome.models import Room
 from rasphome.models import User
 
 class Root(object):
-    pass
-#    @cherrypy.expose
-#    def index(self):
-#        cherrypy.response.headers['content-type'] = 'text/plain'
-#        msg = "Hello World! "
-#        if cherrypy.request.login:
-#            msg += "Login: %s" % cherrypy.request.login
-#        return msg
+    exposed = True
+    
+    @cherrypy.tools.require(roles={"backend":[], "monitor":[], "user":["admin"]})
+    def GET(self):
+        session = cherrypy.request.db
+        cherrypy.response.headers['content-type'] = 'text/plain'
+        msg = "Backends:\n"
+        backends = Backend.get_all(session)
+        for backend in backends:
+            msg += str(backend) + "\n"
+        msg += "Monitors:\n"
+        monitors = Monitor.get_all(session)
+        for monitor in monitors:
+            msg += str(monitor) + "\n"
+        msg += "Nodes:\n"
+        nodes = Node.get_all(session)
+        for node in nodes:
+            msg += str(node) + "\n"
+        msg += "Rooms:\n"
+        rooms = Room.get_all(session)
+        for room in rooms:
+            msg += str(room) + "\n"
+        msg += "Users:\n"
+        users = User.get_all(session)
+        for user in users:
+            msg += str(user) + "\n"

@@ -32,7 +32,7 @@ class Role(Base):
     
     __tablename__ = 'role'
     id = Column(Integer, primary_key=True)
-    type = Column(String(50))
+    role = Column(String(50))
     name = Column(String(50), unique=True)
     password = Column(String(128))
     active = Column(Boolean, default=False)
@@ -44,11 +44,20 @@ class Role(Base):
     
     __mapper_args__ = {
         'polymorphic_identity':'role',
-        'polymorphic_on':type
+        'polymorphic_on':role
     }
         
     def __repr__(self):
-        return "<Role %s>" % self.name
+        return "%d %s %s %s %s, %s, %s, %s, %d, %d" % (self.id, 
+                              self.role, 
+                              self.name, 
+                              self.password, 
+                              self.active, 
+                              self.backend_name, 
+                              self.backend_pass, 
+                              self.ip, 
+                              self.serverport, 
+                              self.zeroconfport)
     
     def check_auth(self, password):
         return sha512_crypt.verify(password, self.password)

@@ -38,7 +38,7 @@ class Room(Base):
     name = Column(String(50), unique=True)
     
     def __repr__(self):
-        return "<Room %s>" % (self.name)
+        return "%s" % (self.name)
 
     @staticmethod
     def export_one(element, attribs):

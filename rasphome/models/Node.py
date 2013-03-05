@@ -49,7 +49,21 @@ class Node(Role):
     }
     
     def __repr__(self):
-        return "<Node %s>" % (self.name)
+        return "%d %s %s %s %s, %s, %s, %s, %d, %d %s %s %s %s %s" % (self.id, 
+                              self.role, 
+                              self.name, 
+                              self.password, 
+                              self.active, 
+                              self.backend_name, 
+                              self.backend_pass, 
+                              self.ip, 
+                              self.serverport, 
+                              self.zeroconfport,
+                              self.room.name,
+                              self.title,
+                              self.type,
+                              self.input,
+                              self.output)
     
     @staticmethod
     def export_one(element, attribs):
@@ -91,6 +105,8 @@ class Node(Role):
     def get_all(session, attrib=None, value=None):
         if attrib == None:
             return session.query(Node).all()
+        elif attrib == "login":
+            return session.query(Node).filter(Node.login == True).all()
         elif attrib == "room":
             my_room = Room.get_one(session, value)
             if isinstance(my_room, Room):
