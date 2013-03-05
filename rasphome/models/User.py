@@ -58,8 +58,8 @@ class User(Role):
                               self.ip, 
                               self.serverport, 
                               self.zeroconfport,
-                              self.room.name,
-                              self.receive_room.name,
+                              self.room.name if self.room != None else "",
+                              self.receive_room.name if self.receive_room != None else "",
                               self.admin)
     
     @staticmethod

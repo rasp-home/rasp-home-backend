@@ -59,7 +59,7 @@ class Node(Role):
                               self.ip, 
                               self.serverport, 
                               self.zeroconfport,
-                              self.room.name,
+                              self.room.name if self.room != None else "",
                               self.title,
                               self.type,
                               self.input,
