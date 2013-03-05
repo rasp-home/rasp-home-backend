@@ -33,7 +33,6 @@ from rasphome.models import User
 class Root(object):
     exposed = True
     
-    @cherrypy.tools.require(roles={"backend":[], "monitor":[], "user":["admin"]})
     def GET(self):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
