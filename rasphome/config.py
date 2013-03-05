@@ -24,7 +24,7 @@ import configparser
 
 
 config = configparser.ConfigParser()
-config.read(["/etc/rasp-home-backend/rasp-home-backend.conf", "rasp-home-backend.conf"])
+config.read(["rasp-home.conf"])
 
 class ConfigSection(object):
 
@@ -75,9 +75,8 @@ class ConfigSection(object):
 
         return self.__setOption(option, setVal)
 
-
 rasp_settings = ConfigSection(config, "rasp-home")
 rasp_settings.addIntOption("http_port", 8090)
 rasp_settings.addIntOption("https_port", 8091)
 rasp_settings.addOption("db_file", "rasp-home.db")
-
+rasp_settings.addOption("admin_pw", "admin")

@@ -38,9 +38,9 @@ class User(Role):
     __tablename__ = 'user'
     id = Column(Integer, ForeignKey('role.id'), primary_key=True)
     room_id = Column(Integer, ForeignKey('room.id'))
-    room = relationship(Room, foreign_keys=[room_id])
+    room = relationship(Room, primaryjoin=room_id==Room.id, foreign_keys=[room_id])
     receive_room_id = Column(Integer, ForeignKey('room.id'))
-    receive_room = relationship(Room, foreign_keys=[receive_room_id])
+    receive_room = relationship(Room, primaryjoin=receive_room_id==Room.id, foreign_keys=[receive_room_id])
     admin = Column(Boolean, default=False)
     
     __mapper_args__ = {

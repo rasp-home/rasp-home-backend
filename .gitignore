@@ -37,3 +37,4 @@ nosetests.xml
 .idea
 .settings
 rasp-home-backend.iml
+rasp-home.db

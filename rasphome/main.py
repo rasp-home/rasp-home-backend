@@ -27,19 +27,23 @@ import rasphome.authorization
 import rasphome.api
 import os.path
 from logging import handlers, DEBUG, Formatter
+from rasphome.models import User
         
-def create_user(session, username, password):
-    from rasphome.models import User
-    print("Create User %s" % username)
-    my_user = User()
-    User.edit_one(session, my_user, "name", username)
-    User.edit_one(session, my_user, "password", password)
-    User.edit_one(session, my_user, "admin", True)
-    User.add_one(session, my_user)
+def create_admin_user(session, username, password):
+    #print("Create User %s" % username)
+	my_user = User.get_one(session, username)
+	if isinstance(my_user, User):
+		User.edit_one(session, my_user, "password", password)
+	else:
+		my_user = User()
+		User.edit_one(session, my_user, "name", username)
+		User.edit_one(session, my_user, "password", password)
+		User.edit_one(session, my_user, "admin", True)
+		User.add_one(session, my_user)
 
 @rasphome.database.rasp_db_session
 def create_init_db(session):
-    create_user(session, "admin", "admin")
+    create_admin_user(session, "admin", rasp_settings.admin_pw)
     session.commit()
 
 def setUpLogger():
@@ -83,12 +87,10 @@ def _get_root_start():
     rasphome.database.SAEnginePlugin(cherrypy.engine).subscribe()
     cherrypy.tools.db = rasphome.database.SATool()
 
-    ## Set standard port
-    cherrypy.config.update({'server.socket_port': rasp_settings.http_port})
-
     ## Activate additional SSL Server
     from cherrypy._cpserver import Server
     server = Server()
+    server.socket_host = '0.0.0.0'
     server.socket_port = rasp_settings.https_port
     server.ssl_certificate = './cert.pem'
     server.ssl_private_key = './privatekey.pem'
@@ -96,6 +98,10 @@ def _get_root_start():
 
     ## Do other config
     config = {
+        'global' : {
+            'server.socket_host' : '0.0.0.0',
+            'server.socket_port' : rasp_settings.http_port
+        },
         '/' : {
             'tools.auth_basic.on': True,
             'tools.auth_basic.realm': 'earth',

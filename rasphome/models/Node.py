@@ -38,7 +38,7 @@ class Node(Role):
     __tablename__ = 'node'
     id = Column(Integer, ForeignKey('role.id'), primary_key=True)
     room_id = Column(Integer, ForeignKey('room.id'))
-    room = relationship(Room, foreign_keys=[room_id])
+    room = relationship(Room, primaryjoin=room_id==Room.id, foreign_keys=[room_id])
     title = Column(String(50))
     type = Column(String(50))
     input = Column(String(50))
