@@ -26,46 +26,44 @@
 __all__ = ['send_request', 'send_requests']
 
 import cherrypy
+from base64 import b64encode
 from http.client import HTTPSConnection
 from rasphome.models import Role
 from rasphome.models import Backend
 from rasphome.models import Monitor
 from rasphome.models import User
 
-#TODO: Use process not thread and create new session of database
-#@rasp_db_session def send_request(session, ...)
-#TODO: Complete function with error handling
+# TODO: Use process not thread and create new session of database
+# @rasp_db_session def send_request(session, ...)
 def send_request(role, method, type, value, value_type, name=None, attrib=None):
-    uri = "/" + type
-    if name != None:
-        uri += "/" + name
-    if attrib != None:
-        uri += "/" + attrib
-    client = HTTPSConnection(role.backend_name + ":" + role.backend_pass + "@" + role.ip + ":" + role.serverport, timeout=5)
-    header = {"Content-type": value_type}
+    host = role.ip + ":" + role.serverport
+    auth = b64encode((role.backend_name + ":" + role.backend_pass).encode()).decode()
+    uri = "/" + type + ("/" + name) if name != None else "" + ("/" + attrib) if attrib != None else ""
+    header = {"Authorization": "Basic " + auth, "Content-type": value_type}
+    client = HTTPSConnection(host, timeout=5)
     try:
-        client.request("GET", "/uri", value, header)
+        print("Send request: %s %s" % (host, uri))
+        client.request(method, uri, value, header)
         response = client.getresponse()
         client.close()
-        #print(response.status + " " + response.reason + " " + response.read())
+        print("Get response: %s %s %s" % (response.status, response.reason, response.read()))
         return response
     except:
+        print("Send error: %s %s" % (host, uri))
+        role.active = False
         return None
 
-#TODO: Complete function with error handling
 def send_requests(roles, method, type, value, value_type, name=None, attrib=None):
     session = cherrypy.request.db
     elements = []
     if "backend" in roles:
-        elements.extend(Backend.get_all(session))
+        elements.extend(Backend.get_all(session, active=True))
     if "monitor" in roles:
-        elements.extend(Monitor.get_all(session))
+        elements.extend(Monitor.get_all(session, active=True))
     if "user" in roles:
         if len(roles["user"]) == 2:
-            elements.extend(User.get_all(session, roles["user"][0], roles["user"][1]))
+            elements.extend(User.get_all(session, "room", roles["user"], active=True))
         else:
-            elements.extend(User.get_all(session))
+            elements.extend(User.get_all(session, active=True))
     for element in elements:
         response = send_request(element, method, type, value, name, attrib)
-        if response == None:
-            pass

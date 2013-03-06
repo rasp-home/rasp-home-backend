@@ -35,7 +35,7 @@ class Room(Base):
     
     __tablename__ = 'room'
     id = Column(Integer, primary_key=True)
-    name = Column(String(50), unique=True)
+    name = Column(String(50), unique=True, nullable=False)
     
     @staticmethod
     def export_one(element, attribs):

@@ -85,15 +85,17 @@ class Node(Role):
             return Node.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def get_all(session, attrib=None, value=None):
+    def get_all(session, attrib=None, value=None, active=None):
+        if active == None:
+            filter_active = Node.active != None
+        else:
+            filter_active = Node.active == active
         if attrib == None:
-            return session.query(Node).all()
-        elif attrib == "login":
-            return session.query(Node).filter(Node.login == True).all()
+            return session.query(Node).filter(filter_active).all()
         elif attrib == "room":
             my_room = Room.get_one(session, value)
             if isinstance(my_room, Room):
-                return session.query(Node).filter(Node.room == my_room).all()
+                return session.query(Node).filter(Node.room == my_room, filter_active).all()                    
             else:
                 return Node.ERROR_VALUE_NOT_VALID
         else:

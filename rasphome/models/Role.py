@@ -33,9 +33,9 @@ class Role(Base):
     __tablename__ = 'role'
     id = Column(Integer, primary_key=True)
     role = Column(String(50))
-    name = Column(String(50), unique=True)
+    name = Column(String(50), unique=True, nullable=False)
     password = Column(String(128))
-    active = Column(Boolean, default=False)
+    active = Column(Boolean, default=False, nullable=False)
     backend_name = Column(String(50))
     backend_pass = Column(String(50))
     ip = Column(String(50))

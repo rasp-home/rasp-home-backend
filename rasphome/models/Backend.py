@@ -34,7 +34,7 @@ class Backend(Role):
     
     __tablename__ = 'backend'
     id = Column(Integer, ForeignKey('role.id'), primary_key=True)
-    master = Column(Boolean, default=False)
+    master = Column(Boolean, default=False, nullable=False)
     
     __mapper_args__ = {
         'polymorphic_identity':'backend'
@@ -68,16 +68,18 @@ class Backend(Role):
             return Backend.ERROR_ELEMENT_NOT_EXISTS
         
     @staticmethod
-    def get_all(session, attrib=None, value=None):
+    def get_all(session, attrib=None, value=None, active=None):
+        if active == None:
+            filter_active = Backend.active != None
+        else:
+            filter_active = Backend.active == active
         if attrib == None:
-            return session.query(Backend).all()
-        elif attrib == "login":
-            return session.query(Backend).filter(Backend.login == True).all()
+            return session.query(Backend).filter(filter_active).all()
         elif attrib == "master":
             if value == "True":
-                return session.query(Backend).filter(Backend.master == True).all()
+                return session.query(Backend).filter(Backend.master == True, filter_active).all()
             else:
-                return session.query(Backend).filter(Backend.master == False).all()
+                return session.query(Backend).filter(Backend.master == False, filter_active).all()
         else:
             return Backend.ERROR_ATTRIB_NOT_VALID
             

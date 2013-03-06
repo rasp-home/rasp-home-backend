@@ -41,7 +41,7 @@ class User(Role):
     room = relationship(Room, primaryjoin=room_id==Room.id, foreign_keys=[room_id])
     receive_room_id = Column(Integer, ForeignKey('room.id'))
     receive_room = relationship(Room, primaryjoin=receive_room_id==Room.id, foreign_keys=[receive_room_id])
-    admin = Column(Boolean, default=False)
+    admin = Column(Boolean, default=False, nullable=False)
     
     __mapper_args__ = {
         'polymorphic_identity':'user'
@@ -83,21 +83,23 @@ class User(Role):
             return User.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def get_all(session, attrib=None, value=None):
+    def get_all(session, attrib=None, value=None, active=None):
+        if active == None:
+            filter_active = User.active != None
+        else:
+            filter_active = User.active == active
         if attrib == None:
-            return session.query(User).all()
-        elif attrib == "login":
-            return session.query(User).filter(User.login == True).all()
+            return session.query(User).filter(filter_active).all()
         elif attrib == "room":
             my_room = Room.get_one(session, value)
             if isinstance(my_room, Room):
-                return session.query(User).filter(User.room == my_room).all()
+                return session.query(User).filter(User.room == my_room, filter_active).all()
             else:
                 return User.ERROR_VALUE_NOT_VALID
         elif attrib == "receiveroom":
             my_room = Room.get_one(session, value)
             if isinstance(my_room, Room):
-                return session.query(User).filter(User.receive_room == my_room).all()
+                return session.query(User).filter(User.receive_room == my_room, filter_active).all()
             else:
                 return User.ERROR_VALUE_NOT_VALID
         else:

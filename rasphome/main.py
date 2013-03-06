@@ -30,7 +30,7 @@ from logging import handlers, DEBUG, Formatter
 from rasphome.models import User
         
 def create_admin_user(session, username, password):
-    #print("Create User %s" % username)
+    # print("Create User %s" % username)
 	my_user = User.get_one(session, username)
 	if isinstance(my_user, User):
 		User.edit_one(session, my_user, "password", password)
@@ -38,14 +38,14 @@ def create_admin_user(session, username, password):
 		my_user = User()
 		User.edit_one(session, my_user, "name", username)
 		User.edit_one(session, my_user, "password", password)
-		User.edit_one(session, my_user, "admin", True)
+		User.edit_one(session, my_user, "admin", "True")
 		User.add_one(session, my_user)
 
 @rasphome.database.rasp_db_session
 def create_init_db(session):
     create_admin_user(session, "admin", rasp_settings.admin_pw)
     session.commit()
-
+    
 def setUpLogger():
     log = cherrypy.log
 
@@ -75,19 +75,19 @@ def setUpLogger():
     cherrypy.log = log
 
 def _get_root_start():
-    ## Set up path to db file
+    # # Set up path to db file
     db_path = os.path.abspath(os.path.join(os.curdir, rasp_settings.db_file))
     rasphome.database.set_db_path('sqlite:///%s' % db_path)
 
-    ## Set up Admin User name and Default admin user
+    # # Set up Admin User name and Default admin user
     # noinspection PyArgumentList
     create_init_db()
 
-    ## Set up Sqlalchemy Plugin and Tool
+    # # Set up Sqlalchemy Plugin and Tool
     rasphome.database.SAEnginePlugin(cherrypy.engine).subscribe()
     cherrypy.tools.db = rasphome.database.SATool()
 
-    ## Activate additional SSL Server
+    # # Activate additional SSL Server
     from cherrypy._cpserver import Server
     server = Server()
     server.socket_host = '0.0.0.0'
@@ -96,7 +96,7 @@ def _get_root_start():
     server.ssl_private_key = './privatekey.pem'
     server.subscribe()
 
-    ## Do other config
+    # # Do other config
     config = {
         'global' : {
             'server.socket_host' : '0.0.0.0',
@@ -111,7 +111,7 @@ def _get_root_start():
         }
     }
 
-    ## Set up Api
+    # # Set up Api
     root = rasphome.api.Root()
     root.backend = rasphome.api.Backend_api()
     root.monitor = rasphome.api.Monitor_api()

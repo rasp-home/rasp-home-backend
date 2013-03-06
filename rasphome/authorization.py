@@ -38,13 +38,13 @@ def checkpassword(role=None, role_password=None):
             role = session.query(Role).filter(Role.name == username).one()
             if role.check_auth(password) == True:
                 cherrypy.request.role = role
+                role.active = True
                 return True
         except NoResultFound:
-            pass
-        if role != None and role_password != None and role == username and role_password == password:
-            cherrypy.request.role = role
-            return True
-        return False
+            if role != None and role_password != None and role == username and role_password == password:
+                cherrypy.request.role = role
+                return True
+            return False
     
     return checkpassword
 

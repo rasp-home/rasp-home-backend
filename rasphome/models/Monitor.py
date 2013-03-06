@@ -60,11 +60,12 @@ class Monitor(Role):
             return Monitor.ERROR_ELEMENT_NOT_EXISTS
     
     @staticmethod
-    def get_all(session, attrib=None, value=None):
-        if attrib == None:
-            return session.query(Monitor).all()
-        elif attrib == "login":
-            return session.query(Monitor).filter(Monitor.login == True).all()
+    def get_all(session, active=None):
+        if active == None:
+            filter_active = Monitor.active != None
+        else:
+            filter_active = Monitor.active == active
+        return session.query(Monitor).filter(filter_active).all()
     
     @staticmethod
     def add_one(session, new_element):

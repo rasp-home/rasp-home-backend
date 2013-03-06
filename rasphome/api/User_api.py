@@ -25,6 +25,8 @@ __all__ = ['User_api']
 import cherrypy
 from rasphome import authorization
 from rasphome.models.User import User
+from rasphome import client_com
+from multiprocessing import Process
 
 class User_api(object):
     exposed = True
@@ -72,6 +74,7 @@ class User_api(object):
                 if isinstance(element, User):
                     element = User.add_one(session, element)
                     if isinstance(element, User):
+                        Process(target=client_com.send_requests, args=()).start()
                         return "User %s added" % name
                     elif element == User.ERROR_ELEMENT_ALREADY_EXISTS:
                         raise cherrypy.HTTPError("403", "User %s alread exists" % name)
