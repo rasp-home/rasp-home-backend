@@ -26,7 +26,6 @@ import cherrypy
 from rasphome import authorization
 from rasphome.models.User import User
 from rasphome import client_com
-from multiprocessing import Process
 
 class User_api(object):
     exposed = True
@@ -48,7 +47,10 @@ class User_api(object):
             else:
                 elements = User.get_all(session)
             if isinstance(elements, list):
-                return User.export_all(elements, ["name", "room", "receive_room"])
+                if isinstance(cherrypy.request.role, User):
+                    return User.export_all(elements, ["name", "room", "receive_room", "admin"])
+                else:
+                    return User.export_all(elements, "all")
             elif elements == User.ERROR_VALUE_NOT_VALID:
                 raise cherrypy.HTTPError("404", "Value %s of attribute %s not valid" % room, "room")
         else:
@@ -74,7 +76,7 @@ class User_api(object):
                 if isinstance(element, User):
                     element = User.add_one(session, element)
                     if isinstance(element, User):
-                        Process(target=client_com.send_requests, args=()).start()
+                        client_com.send_requests_process({"backend": None, "monitor": None}, "PUT", "user", name, attrib, body, "text/xml")
                         return "User %s added" % name
                     elif element == User.ERROR_ELEMENT_ALREADY_EXISTS:
                         raise cherrypy.HTTPError("403", "User %s alread exists" % name)
@@ -87,6 +89,7 @@ class User_api(object):
                 if isinstance(element, User):
                     element = User.edit_one(session, element, attrib, body)
                     if isinstance(element, User):
+                        client_com.send_requests_process({"backend": None, "monitor": None}, "PUT", "user", name, attrib, body, "text/plain")
                         return "User %s attribute %s value %s changed" % (name, attrib, body)
                     elif element == User.ERROR_VALUE_NOT_VALID:
                         raise cherrypy.HTTPError("403", "Value %s of attribute %s not valid" % (body, attrib))
@@ -111,6 +114,7 @@ class User_api(object):
             if isinstance(element, User):
                 element = User.import_one(session, body, element=element)
                 if isinstance(element, User):
+                    client_com.send_requests_process({"backend": None, "monitor": None}, "POST", "user", name, None, body, "text/xml")
                     return "User %s updated" % name
                 elif element == User.ERROR_VALUE_NOT_VALID:
                     raise cherrypy.HTTPError("403", "Value of attribute not valid")
@@ -132,6 +136,7 @@ class User_api(object):
         if isinstance(element, User):
             element = User.del_one(session, element)
             if isinstance(element, User):
+                client_com.send_requests_process({"backend": None, "monitor": None}, "DELETE", "user", name, None, None, None)
                 return "User %s deleted" % name
         elif element == User.ERROR_ELEMENT_NOT_EXISTS:
             raise cherrypy.HTTPError("404", "User %s not found" % name)

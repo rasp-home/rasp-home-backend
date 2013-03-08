@@ -41,7 +41,7 @@ class Backend_api(object):
         if name == None:
             elements = Backend.get_all(session, "master", master)
             if isinstance(elements, list):
-                return Backend.export_all(elements, ["all"])
+                return Backend.export_all(elements, "all")
         else:
             element = Backend.get_one(session, name)
             if isinstance(element, Backend):
@@ -65,6 +65,7 @@ class Backend_api(object):
                 if isinstance(element, Backend):
                     element = Backend.add_one(session, element)
                     if isinstance(element, Backend):
+                        client_com.send_requests_process({"backend": None}, "PUT", "backend", name, attrib, body, "text/xml")
                         return "Backend %s added" % name
                     elif element == Backend.ERROR_ELEMENT_ALREADY_EXISTS:
                         raise cherrypy.HTTPError("403", "Backend %s alread exists" % name)
@@ -76,6 +77,7 @@ class Backend_api(object):
                     if isinstance(element, Backend):
                         element = Backend.edit_one(session, element, attrib, body)
                         if isinstance(element, Backend):
+                            client_com.send_requests_process({"backend": None}, "PUT", "backend", name, attrib, body, "text/plain")
                             return "Backend %s attribute %s value %s changed" % (name, attrib, body)
                         elif element == Backend.ERROR_ATTRIB_NOT_VALID:
                             raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
@@ -99,6 +101,7 @@ class Backend_api(object):
             if isinstance(element, Backend):
                 element = Backend.import_one(session, body, element=element)
                 if isinstance(element, Backend):
+                    client_com.send_requests_process({"backend": None}, "POST", "backend", name, None, body, "text/xml")
                     return "Backend %s updated" % name
                 elif element == Backend.ERROR_TAG_NOT_VALID:
                     raise cherrypy.HTTPError("400", "Tag not valid")
@@ -118,6 +121,7 @@ class Backend_api(object):
         if isinstance(element, Backend):
             element = Backend.del_one(session, element)
             if isinstance(element, Backend):
+                client_com.send_requests_process({"backend": None}, "DELETE", "backend", name, None, None, None)
                 return "Backend %s deleted" % name
         elif element == Backend.ERROR_ELEMENT_NOT_EXISTS:
             raise cherrypy.HTTPError("404", "Backend %s not found" % name)

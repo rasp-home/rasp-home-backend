@@ -40,7 +40,10 @@ class Room_api(object):
         if name == None:
             elements = Room.get_all(session)
             if isinstance(elements, list):
-                return Room.export_all(elements, ["name"])
+                if isinstance(cherrypy.request.role, User):
+                    return Room.export_all(elements, ["name"])
+                else:
+                    return Room.export_all(elements, "all")
         else:
             element = Room.get_one(session, name)
             if isinstance(element, Room):
@@ -63,6 +66,7 @@ class Room_api(object):
                 if isinstance(element, Room):
                     element = Room.add_one(session, element)
                     if isinstance(element, Room):
+                        client_com.send_requests_process({"backend": None, "monitor": None, "user": None}, "PUT", "room", name, attrib, body, "text/xml")
                         return "Room %s added" % name
                     elif element == Room.ERROR_ELEMENT_ALREADY_EXISTS:
                         raise cherrypy.HTTPError("403", "Room %s already exists" % name)
@@ -73,6 +77,7 @@ class Room_api(object):
                 if isinstance(element, Room):
                     element = Room.edit_one(session, element, attrib, body)
                     if isinstance(element, Room):
+                        client_com.send_requests_process({"backend": None, "monitor": None, "user": None}, "PUT", "room", name, attrib, body, "text/plain")
                         return "Room %s attribute %s value %s changed" % (name, attrib, body)
                     elif element == Room.ERROR_ATTRIB_NOT_VALID:
                         raise cherrypy.HTTPError("404", "Attribute % not found" % attrib)
@@ -94,6 +99,7 @@ class Room_api(object):
             if isinstance(element, Room):
                 element = Room.import_one(session, body, element=element)
                 if isinstance(element, Room):
+                    client_com.send_requests_process({"backend": None, "monitor": None, "user": None}, "POST", "room", name, None, body, "text/xml")
                     return "Room %s updated" % name
                 elif element == Room.ERROR_TAG_NOT_VALID:
                     raise cherrypy.HTTPError("400", "Tag not valid")
@@ -113,6 +119,7 @@ class Room_api(object):
         if isinstance(element, Room):
             element = Room.del_one(session, element)
             if isinstance(element, Room):
+                client_com.send_requests_process({"backend": None, "monitor": None, "user": None}, "DELETE", "room", name, None, None, None)
                 return "Room %s deleted" % name
         elif element == Room.ERROR_ELEMENT_NOT_EXISTS:
             raise cherrypy.HTTPError("404", "User %s not found" % name)

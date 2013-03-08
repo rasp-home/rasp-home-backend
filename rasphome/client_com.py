@@ -32,14 +32,18 @@ from rasphome.models import Role
 from rasphome.models import Backend
 from rasphome.models import Monitor
 from rasphome.models import User
+from multiprocessing import Process
 
+# TODO: Support HTTP and HTTPS support
 # TODO: Use process not thread and create new session of database
 # @rasp_db_session def send_request(session, ...)
-def send_request(role, method, type, value, value_type, name=None, attrib=None):
+def send_request(role, method, type, name, attrib, value, value_type):
     host = role.ip + ":" + role.serverport
     auth = b64encode((role.backend_name + ":" + role.backend_pass).encode()).decode()
     uri = "/" + type + ("/" + name) if name != None else "" + ("/" + attrib) if attrib != None else ""
-    header = {"Authorization": "Basic " + auth, "Content-type": value_type}
+    header = {"Authorization": "Basic " + auth}
+    if value_type != None:
+        header["Content-type"] = value_type
     client = HTTPSConnection(host, timeout=5)
     try:
         print("Send request: %s %s" % (host, uri))
@@ -53,7 +57,7 @@ def send_request(role, method, type, value, value_type, name=None, attrib=None):
         role.active = False
         return None
 
-def send_requests(roles, method, type, value, value_type, name=None, attrib=None):
+def send_requests(roles, method, type, name, attrib, value, value_type):
     session = cherrypy.request.db
     elements = []
     if "backend" in roles:
@@ -61,9 +65,12 @@ def send_requests(roles, method, type, value, value_type, name=None, attrib=None
     if "monitor" in roles:
         elements.extend(Monitor.get_all(session, active=True))
     if "user" in roles:
-        if len(roles["user"]) == 2:
-            elements.extend(User.get_all(session, "room", roles["user"], active=True))
-        else:
-            elements.extend(User.get_all(session, active=True))
+        elements.extend(User.get_all(session, "room", roles["user"], active=True))
     for element in elements:
         response = send_request(element, method, type, value, name, attrib)
+
+def send_request_process(role, method, type, name, attrib, value, value_type):
+    Process(target=send_request, args=(role, method, type, name, attrib, value, value_type, attrib)).start()
+
+def send_requests_process(roles, method, type, name, value, value_type, attrib=None):
+    Process(target=send_requests, args=(roles, method, type, name, attrib, value, value_type, attrib)).start()

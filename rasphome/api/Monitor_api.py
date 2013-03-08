@@ -41,7 +41,7 @@ class Monitor_api(object):
         if name == None:
             elements = Monitor.get_all(session, room)
             if isinstance(elements, list):
-                return Monitor.export_all(elements, ["name"])
+                return Monitor.export_all(elements, "all")
         else:
             element = Monitor.get_one(session, name)
             if isinstance(element, Monitor):
@@ -65,6 +65,7 @@ class Monitor_api(object):
                 if isinstance(element, Monitor):
                     element = Monitor.add_one(session, element)
                     if isinstance(element, Monitor):
+                        client_com.send_requests_process({"backend": None}, "PUT", "monitor", name, attrib, body, "text/xml")
                         return "Monitor %s added" % name
                     elif element == Monitor.ERROR_ELEMENT_ALREADY_EXISTS:
                         raise cherrypy.HTTPError("403", "Monitor %s alread exists" % name)
@@ -76,6 +77,7 @@ class Monitor_api(object):
                     if isinstance(element, Monitor):
                         element = Monitor.edit_one(session, element, attrib, body)
                         if isinstance(element, Monitor):
+                            client_com.send_requests_process({"backend": None}, "PUT", "monitor", name, attrib, body, "text/plain")
                             return "Monitor %s attribute %s value %s changed" % (name, attrib, body)
                         elif element == Monitor.ERROR_ATTRIB_NOT_VALID:
                             raise cherrypy.HTTPError("404", "Attribute %s not found" % attrib)
@@ -99,6 +101,7 @@ class Monitor_api(object):
             if isinstance(element, Monitor):
                 element = Monitor.import_one(session, body, element=element)
                 if isinstance(element, Monitor):
+                    client_com.send_requests_process({"backend": None}, "POST", "monitor", name, None, body, "text/xml")
                     return "Monitor %s updated" % name
                 elif element == Monitor.ERROR_TAG_NOT_VALID:
                     raise cherrypy.HTTPError("400", "Tag not valid")
@@ -118,6 +121,7 @@ class Monitor_api(object):
         if isinstance(element, Monitor):
             element = Monitor.del_one(session, element)
             if isinstance(element, Monitor):
+                client_com.send_requests_process({"backend": None}, "DELETE", "monitor", name, None, None, None)
                 return "Monitor %s deleted" % name
         elif element == Monitor.ERROR_ELEMENT_NOT_EXISTS:
             raise cherrypy.HTTPError("404", "Monitor %s not found" % name)
