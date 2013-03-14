@@ -36,24 +36,25 @@ class Root(object):
     def GET(self):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
-        msg = "Backends:\n"
+        msg = "<backends>\n"
         backends = Backend.get_all(session)
         for backend in backends:
             msg += Backend.export_one(backend, "all").decode() + "\n"
-        msg += "Monitors:\n"
+        msg += "<backends>\n<monitors>\n"
         monitors = Monitor.get_all(session)
         for monitor in monitors:
             msg += Monitor.export_one(monitor, "all").decode() + "\n"
-        msg += "Nodes:\n"
+        msg += "</monitors>\n<nodes>\n"
         nodes = Node.get_all(session)
         for node in nodes:
             msg += Node.export_one(node, "all").decode() + "\n"
-        msg += "Rooms:\n"
+        msg += "</nodes>\n<rooms>\n"
         rooms = Room.get_all(session)
         for room in rooms:
             msg += Room.export_one(room, "all").decode() + "\n"
-        msg += "Users:\n"
+        msg += "</rooms>\n<users>\n"
         users = User.get_all(session)
         for user in users:
             msg += User.export_one(user, "all").decode() + "\n"
+        msg += "</users>"
         return msg

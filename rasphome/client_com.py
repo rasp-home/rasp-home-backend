@@ -50,7 +50,7 @@ def send_request(role, method, type, name, attrib, value, value_type):
         client.request(method, uri, value, header)
         response = client.getresponse()
         client.close()
-        print("Get response: %s %s %s" % (response.status, response.reason, response.read()))
+        print("Get response: %s %s %s" % (response.status, response.reason, response.read().decode()))
         return response
     except:
         print("Send error: %s %s" % (host, uri))

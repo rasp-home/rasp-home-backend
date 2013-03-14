@@ -29,6 +29,8 @@ from rasphome.models.Node import Node
 
 class Node_api(object):
     exposed = True
+    
+    export_attributes = ["name", "room", "title", "type", "input", "output"]
 
     """
     "curl http://admin:admin@localhost:8090/node
@@ -43,7 +45,7 @@ class Node_api(object):
             elements = Node.get_all(session, room)
             if isinstance(elements, list):
                 if isinstance(cherrypy.request.role, User):
-                    return Node.export_all(elements, ["name", "room", "title", "type", "input", "output"])
+                    return Node.export_all(elements, export_attributes)
                 else:
                     return Node.export_all(elements, "all")
             elif elements == Node.ERROR_VALUE_NOT_VALID:
@@ -60,7 +62,7 @@ class Node_api(object):
     " curl -X PUT -H "Content-Type: text/plain" -d "test2" http://admin:admin@localhost:8090/node/node1/room
     """
     @cherrypy.tools.auth_basic(checkpassword=authorization.checkpassword("node", "node"))
-    @cherrypy.tools.require(roles={"backend":[], "node":["self"]})
+    @cherrypy.tools.require(roles={"backend":[], "node":["self"], "user":[]})
     def PUT(self, name, attrib=None):
         session = cherrypy.request.db
         cherrypy.response.headers['content-type'] = 'text/plain'
@@ -83,15 +85,20 @@ class Node_api(object):
                 if not isinstance(cherrypy.request.role, str):
                     element = Node.get_one(session, name)
                     if isinstance(element, Node):
+                        if not isinstance(cherrypy.request.role, Node) and attrib == "input":
+                            response = client_com.send_request(element, "PUT", "node", name, attrib, value, "text/plain")
+                            if response.status != 200:
+                                raise cherrypy.HTTPError("403", "Node send error: %s %s %s" % (response.status, response.reason, response.read().decode()))
                         old_room = element.room
                         element = Node.edit_one(session, element, attrib, body)
                         if isinstance(element, Node):
                             if old_room != element.room:
                                 client_com.send_requests_process({"user": old_room}, "DELETE", "node", name, None, None, None)
-                                client_com.send_requests_process({"user": element.room}, "PUT", "node", name, None, Node.export_one(element, ["name", "room", "title", "type", "input", "output"]), "text/xml")
+                                client_com.send_requests_process({"user": element.room}, "PUT", "node", name, None, Node.export_one(element, export_attributes), "text/xml")
+                                roles = {"backend": None, "monitor": None}
                             else:
-                                client_com.send_requests_process({"user": element.room}, "PUT", "node", name, attrib, body, "text/plain")
-                            client_com.send_requests_process({"backend": None, "monitor": None}, "PUT", "node", name, attrib, body, "text/plain")
+                                roles = {"backend": None, "monitor": None, "user": element.room}
+                            client_com.send_requests_process(roles, "PUT", "node", name, attrib, body, "text/plain")
                             return "Node %s attribute %s value %s changed" % (name, attrib, body)
                         elif element == Node.ERROR_VALUE_NOT_VALID:
                             raise cherrypy.HTTPError("403", "Value %s of attribute %s not valid" % (body, attrib))
@@ -120,10 +127,11 @@ class Node_api(object):
                 if isinstance(element, Node):
                     if old_room != element.room:
                         client_com.send_requests_process({"user": old_room}, "DELETE", "node", name, None, None, None)
-                        client_com.send_requests_process({"user": element.room}, "PUT", "node", name, None, Node.export_one(element, ["name", "room", "title", "type", "input", "output"]), "text/xml")
+                        client_com.send_requests_process({"user": element.room}, "PUT", "node", name, None, Node.export_one(element, export_attributes), "text/xml")
+                        roles = {"backend": None, "monitor": None}
                     else:
-                        client_com.send_requests_process({"user": element.room}, "POST", "node", name, None, body, "text/xml")
-                    client_com.send_requests_process({"backend": None, "monitor": None}, "POST", "node", name, None, body, "text/xml")
+                        roles = {"backend": None, "monitor": None, "user": element.room}
+                    client_com.send_requests_process(roles, "POST", "node", name, None, body, "text/xml")
                     return "Node %s updated" % name
                 elif element == Node.ERROR_VALUE_NOT_VALID:
                     raise cherrypy.HTTPError("403", "Value of attribute not valid")
