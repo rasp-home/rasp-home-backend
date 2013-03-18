@@ -26,6 +26,7 @@ import cherrypy
 import xml.etree.ElementTree
 from rasphome import authorization
 from rasphome.models.Backend import Backend
+from rasphome import client_com
 
 class Backend_api(object):
     exposed = True

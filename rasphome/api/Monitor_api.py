@@ -26,6 +26,7 @@ import cherrypy
 import xml.etree.ElementTree
 from rasphome import authorization
 from rasphome.models.Monitor import Monitor
+from rasphome import client_com
 
 class Monitor_api(object):
     exposed = True

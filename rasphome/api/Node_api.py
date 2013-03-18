@@ -26,6 +26,7 @@ import cherrypy
 import xml.etree.ElementTree
 from rasphome import authorization
 from rasphome.models.Node import Node
+from rasphome import client_com
 
 class Node_api(object):
     exposed = True
