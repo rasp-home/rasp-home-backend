@@ -25,6 +25,7 @@ __all__ = ['Room_api']
 import cherrypy
 from rasphome import authorization
 from rasphome.models.Room import Room
+from rasphome.models.User import User
 from rasphome import client_com
 
 class Room_api(object):
