@@ -106,7 +106,7 @@ class Room(Base):
             if name == None:
                 name = tree.findtext("name")
             if name != None:
-                Room.edit_one(element, "name", name)
+                Room.edit_one(session, element, "name", name)
             return element
         else:
             return Room.ERROR_TAG_NOT_VALID

@@ -52,7 +52,7 @@ class Room_api(object):
                 raise cherrypy.HTTPError("404", "Room %s not found" % name)
     
     """
-    " curl -X PUT -H "Content-Type: text/xml" -d "<room></room>" http://admin:admin@localhost:8090/room/test1
+    " curl -X PUT -H "Content-Type: text/xml" -d "<room></room>" http://admin:admin@localhost:8090/room/room1
     " curl -X PUT -H "Content-Type: text/plain" -d "test2" http://admin:admin@localhost:8090/room/room1/name
     """
     @cherrypy.tools.require(roles={"backend":[], "user":["admin"]})
