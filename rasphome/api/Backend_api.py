@@ -38,7 +38,7 @@ class Backend_api(object):
     @cherrypy.tools.require(roles={"backend":[]})
     def GET(self, name=None, master=None):
         session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
+        cherrypy.response.headers['content-type'] = 'text/xml'
         if name == None:
             elements = Backend.get_all(session, "master", master)
             if isinstance(elements, list):

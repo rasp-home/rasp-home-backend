@@ -35,7 +35,7 @@ class Root(object):
     
     def GET(self):
         session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
+        cherrypy.response.headers['content-type'] = 'text/xml'
         msg = "<backends>\n"
         backends = Backend.get_all(session)
         for backend in backends:

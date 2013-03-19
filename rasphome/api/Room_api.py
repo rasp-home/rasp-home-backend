@@ -38,7 +38,7 @@ class Room_api(object):
     @cherrypy.tools.require(roles={"backend":[], "monitor":[], "user":[]})
     def GET(self, name=None):
         session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
+        cherrypy.response.headers['content-type'] = 'text/xml'
         if name == None:
             elements = Room.get_all(session)
             if isinstance(elements, list):

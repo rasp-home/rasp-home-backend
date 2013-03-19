@@ -38,7 +38,7 @@ class User_api(object):
     @cherrypy.tools.require(roles={"backend":[], "monitor":[], "user":["admin"]})
     def GET(self, name=None, room=None, receive_room=None):
         session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
+        cherrypy.response.headers['content-type'] = 'text/xml'
         if name == None:
             if room != None:
                 elements = User.get_all(session, "room", room)

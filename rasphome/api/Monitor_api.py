@@ -38,7 +38,7 @@ class Monitor_api(object):
     @cherrypy.tools.require(roles={"backend":[], "monitor":["self"]})
     def GET(self, name=None, room=None):
         session = cherrypy.request.db
-        cherrypy.response.headers['content-type'] = 'text/plain'
+        cherrypy.response.headers['content-type'] = 'text/xml'
         if name == None:
             elements = Monitor.get_all(session, room)
             if isinstance(elements, list):
